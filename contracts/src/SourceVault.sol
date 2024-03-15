@@ -47,8 +47,30 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
         withdraw(assets, _receiver, msg.sender);
     }
 
+    // PUBLIC FUNCTIONS TODO: double check these
+    // TODO: PROB NEED SOME KIND OF ACCOUNTING CHANGE HERE TOO
+    function totalAssetsOfUser(address _user) public view returns (uint256) {
+        return asset.balanceOf(_user);
+    }
 
+    function totalAssets() public view override returns (uint256) {
+        uint256 _depositAssetBalance = asset.balanceOf(address(this));
+        uint256 _destinationVaultBalance = FixedPointMathLib.mulDivUp(
+            DestinationVaultBalance,
+            1e18,
+            getExchangeRate()
+        );
+        uint256 _totalAssets = _depositAssetBalance + _destinationVaultBalance;
+        return _totalAssets;
+    }
 
+    function getExchangeRate() internal pure returns (uint256) {
+        return 950000000000000000; // This represents 0.95 in fixed-point arithmetic with 18 decimal places
 
-    
+        // TODO: FINISH THIS LATER TO ACCESS AN ORACLE
+    }
+
+    function addDestinationVault(address _destinationVault) public onlyOwner {
+        destinationVault = _destinationVault;
+    }
 }
