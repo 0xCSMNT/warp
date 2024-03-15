@@ -73,4 +73,23 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
     function addDestinationVault(address _destinationVault) public onlyOwner {
         destinationVault = _destinationVault;
     }
+
+    // VAULT LOCKING FUNCTIONS
+    function lockVault() internal { 
+        // Vault locking logic
+        vaultLocked = true;
+    }
+
+    function unlockVault() internal {
+        vaultLocked = false;
+    }
+
+    // Owner can pause the vault for safety
+    function ownerLockVault() external onlyOwner {
+        lockVault();
+    }
+
+    function ownerUnlockVault() external onlyOwner {
+        unlockVault();
+    }
 }
