@@ -8,3 +8,24 @@ import {FixedPointMathLib} from "@solmate/src/utils/FixedPointMathLib.sol";
 import {LibFormatter} from "./utils/LibFormatter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+contract SourceVault is ERC4626, ProgrammableTokenTransfers {
+    using FixedPointMathLib for uint256;
+    using LibFormatter for uint256;
+    using Math for uint256;
+
+    constructor(
+        ERC20 _asset,
+        string memory _name,
+        string memory _symbol,
+        address _router,
+        address _link
+    )
+        ProgrammableTokenTransfers(_router, _link)
+        ERC4626(_asset, _name, _symbol)
+    {}
+
+    
+
+
+    
+}
