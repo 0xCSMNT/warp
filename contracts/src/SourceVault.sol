@@ -8,7 +8,10 @@ import {FixedPointMathLib} from "@solmate/src/utils/FixedPointMathLib.sol";
 import {LibFormatter} from "./utils/LibFormatter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract SourceVault is ERC4626, ProgrammableTokenTransfers {
+contract SourceVault is
+    ProgrammableTokenTransfers,
+    ERC4626 // Make this "is ILogAutomation"
+{
     using FixedPointMathLib for uint256;
     using LibFormatter for uint256;
     using Math for uint256;
@@ -24,19 +27,43 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
         ERC4626(_asset, _name, _symbol)
     {}
 
-    // STATE VARIABLES
+    // STATE VARIABLES FOR CCIP MESSAGES
+    uint64 public DestinationChainId;
+    address public DestinationSenderReceiver;
+
+    // STATE VARIABLES FOR DEPOSIT LIMIT
+    uint256 public depositThreshold;
+    uint256 public currentDeposits;
+
+    // OTHER STATE VARIABLES
     address public destinationVault;
     bool public vaultLocked;
-    uint256 public DestinationVaultBalance;
+    uint256 public cacheAssetFromDestinationVault; // what is this
+    uint256 public withdrawThreshold; // what is this
+    uint256 public penddingWithdrawal; // what is this
+    mapping(address => bool) public isPendingToWithdraw;
+    uint256 public withdrawalExtraRatio; // 5% = 5e6
+
+    // EVENTS
+    event DepositLimitExceeded(uint256 currentDeposits);
+    event CurrentDepositsReset(uint256 currentDeposits);
 
     // ERC4626 OVERRIDES
     function _deposit(uint _assets) public {
         require(!vaultLocked, "Vault is locked");
         require(_assets > 0, "Deposit must be greater than 0");
         deposit(_assets, msg.sender);
+        currentDeposits += _assets;
+
+        if (currentDeposits > depositThreshold) {
+            emit DepositLimitExceeded(currentDeposits);
+        }
     }
 
     function _withdraw(uint _shares, address _receiver) public {
+        // TODO: two scenarios
+        // 1. directly withdraw if the asset is enough
+        // 2. add address to the withdrawQueue if not enough
         require(!vaultLocked, "Vault is locked");
         require(_shares > 0, "No funds to withdraw");
 
@@ -47,35 +74,52 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
         withdraw(assets, _receiver, msg.sender);
     }
 
-    // PUBLIC FUNCTIONS TODO: double check these
-    // TODO: PROB NEED SOME KIND OF ACCOUNTING CHANGE HERE TOO
-    function totalAssetsOfUser(address _user) public view returns (uint256) {
-        return asset.balanceOf(_user);
+    function execute() public {
+        // TODO: Add logic to proceed the vault's strategy (cross chain yield farming)
+        // this function will call transferTokenWithData to interact with the ccip router
+    }
+
+    function quit() public {
+        // TODO: Add logic to quit the vault's strategy (cross chain yield farming)
+        // withdraw amount = penddingWithdrawal * (1 + withdrawalExtraRatio)
     }
 
     function totalAssets() public view override returns (uint256) {
-        uint256 _depositAssetBalance = asset.balanceOf(address(this));
-        uint256 _destinationVaultBalance = FixedPointMathLib.mulDivUp(
-            DestinationVaultBalance,
-            1e18,
-            getExchangeRate()
-        );
-        uint256 _totalAssets = _depositAssetBalance + _destinationVaultBalance;
+        uint256 _depositAssetBalance = asset
+            .balanceOf(address(this))
+            .formatDecimals(asset.decimals(), 18);
+        uint256 _totalAssets = _depositAssetBalance +
+            cacheAssetFromDestinationVault;
         return _totalAssets;
     }
 
-    function getExchangeRate() internal pure returns (uint256) {
-        return 950000000000000000; // This represents 0.95 in fixed-point arithmetic with 18 decimal places
-
-        // TODO: FINISH THIS LATER TO ACCESS AN ORACLE
+    // TODO: only allow this function to specific addresses
+    function setCacheAssetFromDestinationVault(uint256 _amount) public {
+        cacheAssetFromDestinationVault = _amount;
     }
 
     function addDestinationVault(address _destinationVault) public onlyOwner {
         destinationVault = _destinationVault;
     }
 
+    function addDestinationChainId(
+        uint64 _destinationChainId
+    ) public onlyOwner {
+        DestinationChainId = _destinationChainId;
+    }
+
+    function addDestinationSenderReceiver(
+        address _destinationSenderReceiver
+    ) public onlyOwner {
+        DestinationSenderReceiver = _destinationSenderReceiver;
+    }
+
+    function setDepositThreshold(uint256 _threshold) public onlyOwner {
+        depositThreshold = _threshold;
+    }
+
     // VAULT LOCKING FUNCTIONS
-    function lockVault() internal { 
+    function lockVault() internal {
         // Vault locking logic
         vaultLocked = true;
     }
@@ -91,5 +135,17 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
 
     function ownerUnlockVault() external onlyOwner {
         unlockVault();
+    }
+
+    function batchSendToDestinationVault(string calldata messageSent) public {
+        require(asset.balanceOf(address(this)) > 0, "No assets to send");
+        sendMessagePayLINK(
+            DestinationChainId,
+            DestinationSenderReceiver,
+            messageSent,
+            address(asset),
+            asset.balanceOf(address(this))
+        );
+        currentDeposits = 0;
     }
 }
