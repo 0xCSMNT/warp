@@ -24,7 +24,30 @@ contract SourceVault is ERC4626, ProgrammableTokenTransfers {
         ERC4626(_asset, _name, _symbol)
     {}
 
-    
+    // STATE VARIABLES
+    address public destinationVault;
+    bool public vaultLocked;
+    uint256 public DestinationVaultBalance;
+
+    // ERC4626 OVERRIDES
+    function _deposit(uint _assets) public {
+        require(!vaultLocked, "Vault is locked");
+        require(_assets > 0, "Deposit must be greater than 0");
+        deposit(_assets, msg.sender);
+    }
+
+    function _withdraw(uint _shares, address _receiver) public {
+        require(!vaultLocked, "Vault is locked");
+        require(_shares > 0, "No funds to withdraw");
+
+        // Convert shares to the equivalent amount of assets
+        uint256 assets = previewRedeem(_shares);
+
+        // Withdraw the assets to the receiver's address
+        withdraw(assets, _receiver, msg.sender);
+    }
+
+
 
 
     
