@@ -21,13 +21,7 @@ import {
   useWalletClient,
 } from "wagmi"
 
-import {
-  BaseSourceVaultContract,
-  USDC,
-  USDC_ARB_SEPOLIA,
-  USDC_BASE_SEPOLIA,
-} from "@/app/constants"
-
+import { inputTokenUsdc, sourceVaultContract } from "@/app/config"
 import { SOURCE_VAULT_ABI } from "./source-vault-abi"
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -65,8 +59,8 @@ export const BridgeProviderContext = createContext<BridgeContext>({
 
 export const useBridge = () => useContext(BridgeProviderContext)
 
-const usdc = USDC_ARB_SEPOLIA
-const spender = BaseSourceVaultContract
+const usdc = inputTokenUsdc
+const spender = sourceVaultContract
 
 export function BridgeProvider(props: { children: any }) {
   const { address } = useAccount()
@@ -162,7 +156,7 @@ export function BridgeProvider(props: { children: any }) {
       const { data } = await publicClient.call({
         account: address,
         data: encodedData,
-        to: BaseSourceVaultContract,
+        to: sourceVaultContract,
       })
       if (data !== undefined) {
         const value = decodeFunctionResult({
