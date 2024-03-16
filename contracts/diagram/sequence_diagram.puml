@@ -1,0 +1,96 @@
+@startuml
+actor Bob
+participant KeeperBot
+
+box "Our Service"
+participant SourceVault
+participant SenderReceiver
+endbox
+
+== deposit flow (from keeper bot)  ==
+note left SourceVault
+if depositableAssetToDestination() >= depositThreshold
+
+Pass depositToDestinationVault() as data.
+end note
+KeeperBot -> SourceVault: execute()
+SourceVault -> CCIPRouter: ccipSend(...) with token
+CCIPRouter -> SenderReceiver: _ccipReceive(...) with token
+note left CCIPRouter: depositToDestinationVault() gets called
+activate SenderReceiver
+SenderReceiver -> DestinationVault: deposit()
+deactivate SenderReceiver
+
+== withdrawal flow (from keeper bot) ==
+note left SourceVault
+if pendingToRedeemFromDst >= redeemThreshold
+
+pass withdraw(amount) as the data
+end note
+KeeperBot -> SourceVault: quit()
+SourceVault -> CCIPRouter: ccipSend(...)
+CCIPRouter -> SenderReceiver: _ccipReceive(...)
+note left CCIPRouter: withdraw(amount) gets called
+activate SenderReceiver
+SenderReceiver -> CCIPRouter: ccipSend(...) with token
+deactivate SenderReceiver
+CCIPRouter -> SourceVault: _ccipReceive(...) with token
+
+note right SourceVault
+_receiveQuitSignal(...) gets called
+and update 
+1. cacheAssetFromDst
+2. pendingToRedeemFromDst
+3. lastRedeemFromDst
+end note
+
+
+
+== withdrawal flow ==
+alt SourceVault.blanceOf(token) >= withdrawal amount, withdraw(amount)
+    Bob -> SourceVault: withdraw(amount)
+    activate SourceVault
+    note right SourceVault
+    max withdrawal amount is not the latest information 
+    only contains the last quit() status
+    end note
+    SourceVault -> Bob: token
+    deactivate SourceVault
+else else if (SourceVault.blanceOf(token) < withdrawal amount) || initSlowRedeem
+  Bob -> SourceVault: initSlowRedeem(amount)
+  note right SourceVault
+  can be called multiple times if the amount is enough 
+  revert if isPendingToRedeem > 0 and has quit in the previous batch
+
+  update 
+  1. totalPendingToRedeem
+  2. isPendingToRedeem
+  3. pendingToRedeemFromDst
+  4. lastRequestToRedeemFromDst
+  end note
+  
+  note right Bob
+  wait for the keeper bot gets triggered and 
+  withdraw token from destination vault
+  end note
+  
+  Bob -> SourceVault: withdraw(amount)
+  activate SourceVault
+  note right SourceVault
+  update
+  1. totalPendingToRedeem
+  2. isPendingToRedeem
+  end note
+  SourceVault -> Bob: token
+  deactivate SourceVault
+end
+
+
+box "Chainlink" #dfe7fb
+participant CCIPRouter order 30
+endbox
+
+box "third party vault"
+participant DestinationVault order 50
+endbox
+@enduml

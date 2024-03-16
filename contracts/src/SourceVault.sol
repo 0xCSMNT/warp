@@ -58,11 +58,15 @@ contract SourceVault is
     // OTHER STATE VARIABLES
     address public destinationVault;
     bool public vaultLocked;
-    uint256 public cacheAssetFromDestinationVault; // what is this
-    uint256 public withdrawThreshold; // what is this
-    uint256 public penddingWithdrawal; // what is this
-    mapping(address => bool) public isPendingToWithdraw;
-    uint256 public withdrawalExtraRatio; // 5% = 5e6
+    uint256 public cacheAssetFromDst;
+    uint256 public depositThreshold = 1e18; // keeper bot only gets triggered when depositableAsset >= depositThreshold
+    uint256 public redeemThreshold = 1e18; // keeper bot only gets triggered when penddingWithdrawal >= withdrawThreshold
+    uint256 public totalPendingToRedeem; // total pending withdrawal from isPendingToWithdraw
+    uint256 public pendingToRedeemFromDst; // pedning to request withdrawal from destination vault in the next batch
+    uint256 public lastRedeemFromDst; // last time the source vault requested withdrawal from destination vault
+    mapping(address => uint256) public lastRequestToRedeemFromDst;
+    mapping(address => uint256) public isPendingToRedeem;
+    uint256 public redeemExtraRatio; // 5% = 5e6
 
     // EVENTS
     event DepositLimitExceeded(uint256 currentDeposits);
@@ -102,6 +106,20 @@ contract SourceVault is
     function quit() public {
         // TODO: Add logic to quit the vault's strategy (cross chain yield farming)
         // withdraw amount = penddingWithdrawal * (1 + withdrawalExtraRatio)
+    }
+
+    function depositableAssetToDestination() public view returns (uint256) {
+        uint256 _depositAssetBalance = asset
+            .balanceOf(address(this))
+            .formatDecimals(asset.decimals(), 18);
+
+        uint256 totalPendingWithdrawal = previewRedeem(totalPendingToRedeem);
+
+        if (totalPendingWithdrawal >= _depositAssetBalance) {
+            return 0;
+        }
+
+        return _depositAssetBalance - totalPendingWithdrawal;
     }
 
     function totalAssets() public view override returns (uint256) {
@@ -170,5 +188,4 @@ contract SourceVault is
     }
 
     // AUTOMATION FUNCTIONS
-    
 }
