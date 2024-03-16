@@ -81,7 +81,7 @@ contract UnitTests is StdCheats, Test {
         senderReceiver.addDestinationVault(address(destinationVault));
         senderReceiver.addSourceVault(address(sourceVault));
         senderReceiver.addVaultToken(address(ccipBnM));
-        senderReceiver.updateVaultTokenDeciamls(ccipBnM.decimals());
+        senderReceiver.updateVaultTokenDecimals(ccipBnM.decimals());
     }
 
     ////////// HELPER FUNCTIONS //////////

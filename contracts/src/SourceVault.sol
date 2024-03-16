@@ -290,4 +290,15 @@ contract SourceVault is
     }
 
     // AUTOMATION FUNCTIONS
+    function checkLog(
+        Log calldata log,
+        bytes memory
+    ) external pure returns (bool upkeepNeeded, bytes memory performData) {
+        upkeepNeeded = true;
+        performData = abi.encode(log.topics[0]);
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        // increaseTempDepositCounter();
+    }
 }
