@@ -28,6 +28,7 @@ contract DeploySvToBase is Script {
 
         sourceVault.allowlistDestinationChain(ARBITRUM_CHAIN_ID, true);
         sourceVault.addDestinationChainId(ARBITRUM_CHAIN_ID);
-
+        sourceVault.allowlistSourceChain(ARBITRUM_CHAIN_ID, true);
+        
     }
 }

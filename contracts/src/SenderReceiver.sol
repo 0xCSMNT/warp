@@ -35,7 +35,7 @@ contract SenderReceiver is ProgrammableTokenTransfers {
         vaultToken = _token;
     }
 
-    function updateVaultTokenDeciamls(uint8 _decimals) public onlyOwner {
+    function updateVaultTokenDecimals(uint8 _decimals) public onlyOwner {
         vaultTokenDecimals = _decimals;
     }
 
