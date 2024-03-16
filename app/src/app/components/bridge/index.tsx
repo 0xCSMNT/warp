@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Input } from "./components/input"
 import { Quote } from "./components/quote"
 
