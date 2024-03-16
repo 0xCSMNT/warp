@@ -2,7 +2,6 @@
 
 import { Footer } from "@/app/components/footer"
 import { Vaults } from "@/app/components/vaults"
-import { ConnectKitButton } from "connectkit"
 import { useAccount } from "wagmi"
 
 import { ConnectButton } from "@/app/components/connect-button"

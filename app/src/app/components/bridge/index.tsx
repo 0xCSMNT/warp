@@ -10,6 +10,7 @@ export function Bridge() {
     isApproved,
     isApproving,
     isLoading,
+    isSubmitting,
     quote,
     onApprove,
     onChangeInput,
@@ -43,7 +44,12 @@ export function Bridge() {
         className="flex h-13 bg-highlight w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer"
         onClick={onSubmit}
       >
-        Submit
+        {isSubmitting && (
+          <div className="h-3 w-3 mr-4">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-background opacity-75"></span>
+          </div>
+        )}
+        <div>{isSubmitting ? "Submitting..." : "Submit"}</div>
       </div>
     </div>
   )

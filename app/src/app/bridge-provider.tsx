@@ -33,6 +33,7 @@ export interface BridgeContext {
   isApproved: boolean
   isApproving: boolean
   isLoading: boolean
+  isSubmitting: boolean
   quote: FormattedQuote | null
   onApprove: () => void
   onChangeInput: (val: string) => void
@@ -45,6 +46,7 @@ export const BridgeProviderContext = createContext<BridgeContext>({
   isApproved: false,
   isApproving: false,
   isLoading: false,
+  isSubmitting: false,
   quote: null,
   onApprove: () => {},
   onChangeInput: () => {},
@@ -65,6 +67,7 @@ export function BridgeProvider(props: { children: any }) {
   const [inputAmountUsd, setInputAmountUsd] = useState("")
   const [isApproving, setIsApproving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [quote, setQuote] = useState<FormattedQuote | null>(null)
 
   const { data: allowance, refetch } = useReadContract({
@@ -116,7 +119,14 @@ export function BridgeProvider(props: { children: any }) {
   }
 
   const onSubmit = () => {
+    const submitting = async () => {
+      setIsSubmitting(true)
+      // TODO: submit tx
+      await delay(2000)
+      setIsSubmitting(false)
+    }
     console.log("submit")
+    submitting()
   }
 
   useEffect(() => {
@@ -133,7 +143,7 @@ export function BridgeProvider(props: { children: any }) {
     // TODO: fetch deposit quote
     const fetchQuote = async () => {
       setIsLoading(true)
-      await delay(2000)
+      await delay(3000)
       setQuote({
         outputAmount: inputAmount,
         outputAmountUsd: `$${inputAmount}`,
@@ -152,6 +162,7 @@ export function BridgeProvider(props: { children: any }) {
         isApproved,
         isApproving,
         isLoading,
+        isSubmitting,
         quote,
         onApprove,
         onChangeInput,
