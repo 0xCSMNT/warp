@@ -16,7 +16,7 @@ export function Popup({ children, isOpen, onClose }: PopupProps) {
       }`}
     >
       <div
-        className="absolute backdrop-blur w-full h-full  bg-background bg-opacity-80 cursor-pointer"
+        className="absolute backdrop-blur w-full h-full  bg-background bg-opacity-95 cursor-pointer"
         onClick={onClose}
       ></div>
       <div className="relative z-99">{children}</div>

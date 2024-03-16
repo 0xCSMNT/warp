@@ -1,7 +1,8 @@
 import { Input } from "./components/input"
 import { Quote } from "./components/quote"
+import { Submitting } from "./components/submitting"
 
-import { useBridge } from "@/app/bridge-provider"
+import { useBridge } from "@/app/providers/bridge-provider"
 
 export function Bridge() {
   const {
@@ -10,13 +11,15 @@ export function Bridge() {
     isApproved,
     isApproving,
     isLoading,
+    isSubmitting,
     quote,
     onApprove,
     onChangeInput,
     onSubmit,
   } = useBridge()
-  console.log(isApproved)
-  return (
+  return isSubmitting ? (
+    <Submitting />
+  ) : (
     <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4 mb-2 ml-4">
         <div className="text-3xl text-highlight cursor-pointer">Deposit</div>
@@ -43,7 +46,14 @@ export function Bridge() {
         className="flex h-13 bg-highlight w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer"
         onClick={onSubmit}
       >
-        Submit
+        {isSubmitting && (
+          <div className="h-3 w-3 mr-4">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-background opacity-75"></span>
+          </div>
+        )}
+        <div className="text-background">
+          {isSubmitting ? "Depositting..." : "Deposit"}
+        </div>
       </div>
     </div>
   )

@@ -6,7 +6,14 @@ import {
   useMemo,
   useState,
 } from "react"
-import { Address, parseAbi, parseUnits } from "viem"
+import {
+  Address,
+  encodeFunctionData,
+  decodeFunctionResult,
+  formatUnits,
+  parseAbi,
+  parseUnits,
+} from "viem"
 import {
   useAccount,
   usePublicClient,
@@ -14,11 +21,8 @@ import {
   useWalletClient,
 } from "wagmi"
 
-import {
-  BaseSourceVaultContract,
-  USDC,
-  USDC_BASE_SEPOLIA,
-} from "@/app/constants"
+import { inputTokenUsdc, sourceVaultContract } from "@/app/config"
+import { SOURCE_VAULT_ABI } from "./source-vault-abi"
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -33,6 +37,7 @@ export interface BridgeContext {
   isApproved: boolean
   isApproving: boolean
   isLoading: boolean
+  isSubmitting: boolean
   quote: FormattedQuote | null
   onApprove: () => void
   onChangeInput: (val: string) => void
@@ -45,6 +50,7 @@ export const BridgeProviderContext = createContext<BridgeContext>({
   isApproved: false,
   isApproving: false,
   isLoading: false,
+  isSubmitting: false,
   quote: null,
   onApprove: () => {},
   onChangeInput: () => {},
@@ -53,8 +59,8 @@ export const BridgeProviderContext = createContext<BridgeContext>({
 
 export const useBridge = () => useContext(BridgeProviderContext)
 
-const usdc = USDC
-const spender = BaseSourceVaultContract
+const usdc = inputTokenUsdc
+const spender = sourceVaultContract
 
 export function BridgeProvider(props: { children: any }) {
   const { address } = useAccount()
@@ -65,6 +71,7 @@ export function BridgeProvider(props: { children: any }) {
   const [inputAmountUsd, setInputAmountUsd] = useState("")
   const [isApproving, setIsApproving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [quote, setQuote] = useState<FormattedQuote | null>(null)
 
   const { data: allowance, refetch } = useReadContract({
@@ -115,9 +122,48 @@ export function BridgeProvider(props: { children: any }) {
     setInputAmount(val)
   }
 
-  const onSubmit = () => {
-    console.log("submit")
-  }
+  const onSubmit = useCallback(() => {
+    const submitting = async () => {
+      if (!address || !publicClient || !walletClient) return
+      const amnt = Number(inputAmount)
+      if (amnt <= 0) return
+      try {
+        setIsSubmitting(true)
+        const amount = parseUnits(inputAmount, 6)
+        console.log(amount)
+        const encodedData = encodeFunctionData({
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          args: [amount, address],
+        })
+        // FIXME:
+        // const gasLimit = await publicClient.estimateGas({
+        //   account: address,
+        //   to: sourceVaultContract,
+        //   data: encodedData,
+        // })
+        const gasLimit = BigInt(500_000)
+        console.log(gasLimit.toString(), "gas")
+        const hash = await walletClient.writeContract({
+          address: sourceVaultContract,
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          args: [amount, address],
+          gas: gasLimit,
+        })
+        await publicClient.waitForTransactionReceipt({
+          confirmations: 1,
+          hash,
+        })
+        setIsSubmitting(false)
+      } catch (error) {
+        console.warn("Error submitting:", error)
+        setIsSubmitting(false)
+      }
+    }
+    console.log("submit", inputAmount)
+    submitting()
+  }, [address, inputAmount, publicClient, walletClient])
 
   useEffect(() => {
     const amount = Number(inputAmount)
@@ -127,22 +173,39 @@ export function BridgeProvider(props: { children: any }) {
   }, [inputAmount])
 
   useEffect(() => {
+    if (!address || !publicClient) return
     const amnt = Number(inputAmount)
     if (amnt <= 0) return
     const amount = parseUnits(inputAmount, 6)
-    // TODO: fetch deposit quote
     const fetchQuote = async () => {
       setIsLoading(true)
-      await delay(2000)
-      setQuote({
-        outputAmount: inputAmount,
-        outputAmountUsd: `$${inputAmount}`,
+      const encodedData = encodeFunctionData({
+        abi: SOURCE_VAULT_ABI,
+        functionName: "deposit",
+        args: [amount, address],
       })
+      console.log(encodedData)
+      const { data } = await publicClient.call({
+        account: address,
+        data: encodedData,
+        to: sourceVaultContract,
+      })
+      if (data !== undefined) {
+        const value = decodeFunctionResult({
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          data,
+        })
+        const outputAmount = formatUnits(BigInt(value), 6)
+        setQuote({
+          outputAmount,
+          outputAmountUsd: `$${outputAmount}`,
+        })
+      }
       setIsLoading(false)
     }
     fetchQuote()
-    console.log(amount)
-  }, [inputAmount])
+  }, [address, inputAmount, publicClient])
 
   return (
     <BridgeProviderContext.Provider
@@ -152,6 +215,7 @@ export function BridgeProvider(props: { children: any }) {
         isApproved,
         isApproving,
         isLoading,
+        isSubmitting,
         quote,
         onApprove,
         onChangeInput,

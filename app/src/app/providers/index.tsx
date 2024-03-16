@@ -3,16 +3,22 @@
 import React from "react"
 
 import { WagmiProvider, createConfig, http } from "wagmi"
-import { base, baseSepolia } from "wagmi/chains"
+import { arbitrumSepolia, base, baseSepolia } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
-import { BridgeProvider } from "@/app/bridge-provider"
+import { chains } from "@/app/config"
+
+import { BridgeProvider } from "./bridge-provider"
 
 const config = createConfig(
   getDefaultConfig({
-    chains: [base, baseSepolia],
+    chains,
     transports: {
+      [arbitrumSepolia.id]: http(
+        `https://arb-sepolia.g.alchemy.com/v2/${process.env
+          .NEXT_PUBLIC_ALCHEMY_ID!}`,
+      ),
       [base.id]: http(
         `https://base-mainnet.g.alchemy.com/v2/${process.env
           .NEXT_PUBLIC_ALCHEMY_ID!}`,
