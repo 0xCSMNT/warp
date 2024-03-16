@@ -6,6 +6,7 @@ interface VaultProps {
   name: string
   provider: string
   apy: string
+  onClick: () => void
   styles: {
     bg: string
     text?: string
@@ -21,6 +22,7 @@ export function Vault(props: VaultProps) {
         styles.bg,
         styles.text ?? "text-background",
       )}
+      onClick={props.onClick}
     >
       <div className={clsx("absolute inset-0 rounded-lg blur", styles.bg)} />
       <div className="relative px-6 py-4 shadow-inner rounded-3xl flex flex-col justify-between h-full w-full">
