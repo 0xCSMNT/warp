@@ -10,10 +10,10 @@ export function Bridge() {
       <div>
         <Input />
       </div>
-      <div className="h-16 bg-element w-full justify-center p-4 text-center rounded-full text-xl font-base cursor-pointer text-white">
+      <div className="flex h-13 bg-element w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer text-white">
         Approve
       </div>
-      <div className="h-16 bg-highlight w-full justify-center p-4 text-center rounded-full text-xl font-base cursor-pointer">
+      <div className="flex h-13 bg-highlight w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer">
         Submit
       </div>
     </div>
