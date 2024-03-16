@@ -122,16 +122,43 @@ export function BridgeProvider(props: { children: any }) {
     setInputAmount(val)
   }
 
-  const onSubmit = () => {
+  const onSubmit = useCallback(() => {
     const submitting = async () => {
-      setIsSubmitting(true)
-      // TODO: submit tx
-      await delay(10_000)
-      setIsSubmitting(false)
+      if (!address || !publicClient || !walletClient) return
+      try {
+        setIsSubmitting(true)
+        const amount = parseUnits(inputAmount, 6)
+        const encodedData = encodeFunctionData({
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          args: [amount, address],
+        })
+        const gasLimit = await publicClient.estimateGas({
+          account: address,
+          to: sourceVaultContract,
+          data: encodedData,
+        })
+        console.log(gasLimit.toString(), "gas")
+        const hash = await walletClient.writeContract({
+          address: sourceVaultContract,
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          args: [amount, address],
+          gas: gasLimit,
+        })
+        await publicClient.waitForTransactionReceipt({
+          confirmations: 1,
+          hash,
+        })
+        setIsSubmitting(false)
+      } catch (error) {
+        console.warn("Error submitting:", error)
+        setIsSubmitting(false)
+      }
     }
     console.log("submit")
     submitting()
-  }
+  }, [address, publicClient, walletClient])
 
   useEffect(() => {
     const amount = Number(inputAmount)
