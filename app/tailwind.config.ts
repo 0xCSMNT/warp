@@ -15,6 +15,9 @@ const config: Config = {
       },
       colors: {
         background: "#191B1C",
+        element: "#2B2B2B",
+        element2: "#3B3B3B",
+        highlight: "#C3F1FF",
       },
     },
   },
