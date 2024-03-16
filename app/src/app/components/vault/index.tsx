@@ -15,12 +15,12 @@ export function Vault(props: VaultProps) {
   return (
     <div
       className={clsx(
-        `flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer`,
+        "flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer",
         styles.bg,
         styles.text ?? "text-background",
       )}
     >
-      <div className={clsx(`absolute inset-0 rounded-lg blur`, styles.bg)} />
+      <div className={clsx("absolute inset-0 rounded-lg blur", styles.bg)} />
       <div className="relative px-6 py-4 shadow-inner rounded-3xl flex flex-col justify-between h-full">
         <div>
           <div className="font-light text-sm">{props.provider}</div>
