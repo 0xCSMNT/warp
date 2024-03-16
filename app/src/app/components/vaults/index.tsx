@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { Popup } from "@/app/components/popup"
 import { Vault } from "@/app/components/vault"
+import { Bridge } from "@/app/components/bridge"
 
 export function Vaults() {
   const [modalOpen, setModalOpen] = useState(false)
@@ -39,7 +40,9 @@ export function Vaults() {
         />
       </div>
       <Popup isOpen={modalOpen} onClose={toggleModal}>
-        <div>deposit</div>
+        <div>
+          <Bridge />
+        </div>
       </Popup>
     </div>
   )

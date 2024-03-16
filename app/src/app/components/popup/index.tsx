@@ -9,7 +9,7 @@ interface PopupProps {
 export function Popup({ children, isOpen, onClose }: PopupProps) {
   return (
     <div
-      className={`backdrop-blur fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-80 transition-opacity ${
+      className={`backdrop-blur fixed inset-0 z-50 flex items-center justify-center bg-background bg-opacity-80 transition-opacity ${
         isOpen
           ? "opacity-100 pointer-events-auto"
           : "opacity-0 pointer-events-none"
