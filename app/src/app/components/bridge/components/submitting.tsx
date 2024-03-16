@@ -11,7 +11,7 @@ export function Submitting() {
       <div>
         <div className="italic font-bold text-2xl text-white">warp ⊹</div>
         <div className="text-white font-extralight text-lg">{`Base -> Arbitrum`}</div>
-        <div className="text-white font-medium text-lg">{`100 USDC -> 100 Real Yield USDC`}</div>
+        <div className="text-white font-medium text-lg">{`100 USDC -> 100 SVB`}</div>
       </div>
     </div>
   )
