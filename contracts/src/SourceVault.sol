@@ -28,10 +28,7 @@ interface ILogAutomation {
     function performUpkeep(bytes calldata performData) external;
 }
 
-contract SourceVault is
-    ProgrammableTokenTransfers,
-    ERC4626 // Make this "is ILogAutomation"
-{
+contract SourceVault is ProgrammableTokenTransfers, ERC4626, ILogAutomation {
     using FixedPointMathLib for uint256;
     using LibFormatter for uint256;
     using Math for uint256;
@@ -54,6 +51,8 @@ contract SourceVault is
     // STATE VARIABLES FOR DEPOSIT LIMIT
     uint256 public depositThreshold;
     uint256 public currentDeposits;
+
+    uint256 public tempDepositCounter = 0;
 
     // OTHER STATE VARIABLES
     address public destinationVault;
@@ -169,6 +168,29 @@ contract SourceVault is
         currentDeposits = 0;
     }
 
+    function increaseTempDepositCounter() public {
+        tempDepositCounter++;
+    }
+
     // AUTOMATION FUNCTIONS
-    
+
+    // function checkLog(
+    //     Log calldata log,
+    //     bytes memory
+    // ) external pure returns (bool upkeepNeeded, bytes memory performData) {
+    //     upkeepNeeded = true;
+    //     address logSender = bytes32ToAddress(log.topics[1]);
+    //     performData = abi.encode(logSender);
+    // }
+
+    function checkLog(
+        Log calldata log,
+        bytes memory
+    ) external pure returns (bool upkeepNeeded, bytes memory performData) {
+        upkeepNeeded = true;
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        increaseTempDepositCounter();
+    }
 }
