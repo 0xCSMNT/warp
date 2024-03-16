@@ -3,12 +3,22 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react"
-import { parseAbi, parseUnits } from "viem"
-import { usePublicClient, useWalletClient } from "wagmi"
+import { Address, parseAbi, parseUnits } from "viem"
+import {
+  useAccount,
+  usePublicClient,
+  useReadContract,
+  useWalletClient,
+} from "wagmi"
 
-import { BaseSourceVaultContract, USDC } from "@/app/constants"
+import {
+  BaseSourceVaultContract,
+  USDC,
+  USDC_BASE_SEPOLIA,
+} from "@/app/constants"
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -20,6 +30,8 @@ interface FormattedQuote {
 export interface BridgeContext {
   inputAmount: string
   inputAmountUsd: string
+  isApproved: boolean
+  isApproving: boolean
   isLoading: boolean
   quote: FormattedQuote | null
   onApprove: () => void
@@ -30,6 +42,8 @@ export interface BridgeContext {
 export const BridgeProviderContext = createContext<BridgeContext>({
   inputAmount: "0",
   inputAmountUsd: "$0",
+  isApproved: false,
+  isApproving: false,
   isLoading: false,
   quote: null,
   onApprove: () => {},
@@ -39,7 +53,11 @@ export const BridgeProviderContext = createContext<BridgeContext>({
 
 export const useBridge = () => useContext(BridgeProviderContext)
 
+const usdc = USDC
+const spender = BaseSourceVaultContract
+
 export function BridgeProvider(props: { children: any }) {
+  const { address } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
 
@@ -48,6 +66,24 @@ export function BridgeProvider(props: { children: any }) {
   const [isApproving, setIsApproving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [quote, setQuote] = useState<FormattedQuote | null>(null)
+
+  const { data: allowance, refetch } = useReadContract({
+    address: usdc,
+    abi: parseAbi([
+      "function allowance(address owner, address spender) external view returns (uint256)",
+    ]),
+    functionName: "allowance",
+    args: [address as Address, spender],
+  })
+
+  const isApproved = useMemo(() => {
+    if (isApproving) return false
+    const amnt = Number(inputAmount)
+    if (amnt <= 0) return false
+    const amount = parseUnits(inputAmount, 6)
+    console.log(amount, allowance, "allowance", address, spender)
+    return allowance ? allowance >= amount : false
+  }, [allowance, inputAmount, isApproving])
 
   const onApprove = useCallback(() => {
     if (!publicClient || !walletClient) return
@@ -59,9 +95,8 @@ export function BridgeProvider(props: { children: any }) {
         "function approve(address spender, uint256 amount) external returns (bool)",
       ])
       const amount = parseUnits(inputAmount, 6)
-      const spender = BaseSourceVaultContract
       const hash = await walletClient.writeContract({
-        address: USDC,
+        address: usdc,
         abi,
         functionName: "approve",
         args: [spender, amount],
@@ -70,6 +105,7 @@ export function BridgeProvider(props: { children: any }) {
         confirmations: 1,
         hash,
       })
+      await refetch()
       setIsApproving(false)
     }
     approve()
@@ -113,6 +149,8 @@ export function BridgeProvider(props: { children: any }) {
       value={{
         inputAmount,
         inputAmountUsd,
+        isApproved,
+        isApproving,
         isLoading,
         quote,
         onApprove,
