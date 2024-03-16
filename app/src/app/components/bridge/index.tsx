@@ -1,5 +1,6 @@
 import { Input } from "./components/input"
 import { Quote } from "./components/quote"
+import { Submitting } from "./components/submitting"
 
 import { useBridge } from "@/app/bridge-provider"
 
@@ -16,8 +17,9 @@ export function Bridge() {
     onChangeInput,
     onSubmit,
   } = useBridge()
-  console.log(isApproved)
-  return (
+  return isSubmitting ? (
+    <Submitting />
+  ) : (
     <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4 mb-2 ml-4">
         <div className="text-3xl text-highlight cursor-pointer">Deposit</div>
