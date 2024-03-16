@@ -8,7 +8,7 @@ import { useAccount } from "wagmi"
 export default function Connect() {
   const { isConnected } = useAccount()
   return (
-    <main className="flex justify-center items-center w-full h-screen">
+    <main className="bg-background flex justify-center items-center w-full h-screen">
       <div className="flex flex-col justify-between items-center h-full w-full">
         <div></div>
         <div>
