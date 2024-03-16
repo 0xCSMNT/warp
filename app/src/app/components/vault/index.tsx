@@ -18,7 +18,7 @@ export function Vault(props: VaultProps) {
   return (
     <div
       className={clsx(
-        "flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer",
+        "flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer hover:scale-105",
         styles.bg,
         styles.text ?? "text-background",
       )}
