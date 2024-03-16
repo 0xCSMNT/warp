@@ -109,18 +109,71 @@ contract SourceVault is
         _checkDepositThreshold();
     }
 
-    function _withdraw(uint _shares, address _receiver) public {
-        // TODO: two scenarios
-        // 1. directly withdraw if the asset is enough
-        // 2. add address to the withdrawQueue if not enough
-        require(!vaultLocked, "Vault is locked");
-        require(_shares > 0, "No funds to withdraw");
+    function initSlowWithdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public whenNotLock returns (uint256 shares) {
+        // TODO: implement slow withdraw logic
+    }
 
-        // Convert shares to the equivalent amount of assets
-        uint256 assets = previewRedeem(_shares);
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public override whenNotLock returns (uint256 shares) {
+        shares = super.withdraw(assets, receiver, owner);
+    }
 
-        // Withdraw the assets to the receiver's address
-        withdraw(assets, _receiver, msg.sender);
+    function initSlowRedeem(uint256 shares, address owner) public whenNotLock {
+        if (msg.sender != owner) {
+            uint256 allowed = allowance[owner][msg.sender];
+
+            if (allowed < shares) revert InsufficientAllowance();
+        }
+
+        uint256 maxShares = maxRedeem(owner);
+        uint256 pendingToRedeem = isPendingToRedeem[owner];
+        uint256 maxRedeemableShares = maxShares - pendingToRedeem;
+
+        // prevent inaccurate withdrawal from destination vault
+        if (
+            pendingToRedeem > 0 &&
+            lastRequestToRedeemFromDst[owner] <= lastRedeemFromDst
+        ) {
+            revert ExistingPendingSharesToBeRedeemedFirst();
+        }
+
+        if (shares > maxRedeemableShares) revert ExceedMaxRedeemableShares();
+
+        totalPendingToRedeem += shares;
+        pendingToRedeemFromDst += shares;
+        isPendingToRedeem[owner] += shares;
+        lastRequestToRedeemFromDst[owner] = block.timestamp;
+
+        _checkRedeemThreshold();
+    }
+
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public override whenNotLock returns (uint256 assets) {
+        uint256 pendingToRedeem = isPendingToRedeem[owner];
+        if (pendingToRedeem > 0) {
+            uint256 diff = (shares >= pendingToRedeem)
+                ? pendingToRedeem
+                : shares;
+
+            isPendingToRedeem[owner] -= diff;
+            totalPendingToRedeem -= diff;
+
+            // prevent unwanted withdrawal from destination vault
+            if (lastRequestToRedeemFromDst[owner] > lastRedeemFromDst) {
+                pendingToRedeemFromDst -= diff;
+            }
+        }
+        assets = super.redeem(shares, receiver, owner);
     }
 
     function execute() public {
