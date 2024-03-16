@@ -52,7 +52,7 @@ export function Bridge() {
           </div>
         )}
         <div className="text-background">
-          {isSubmitting ? "Submitting..." : "Submit"}
+          {isSubmitting ? "Depositting..." : "Deposit"}
         </div>
       </div>
     </div>
