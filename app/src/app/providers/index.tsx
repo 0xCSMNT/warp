@@ -7,11 +7,13 @@ import { arbitrumSepolia, base, baseSepolia } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
+import { chains } from "@/app/config"
+
 import { BridgeProvider } from "./bridge-provider"
 
 const config = createConfig(
   getDefaultConfig({
-    chains: [arbitrumSepolia, base, baseSepolia],
+    chains,
     transports: {
       [arbitrumSepolia.id]: http(
         `https://arb-sepolia.g.alchemy.com/v2/${process.env
