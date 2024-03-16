@@ -4,8 +4,18 @@ import { Quote } from "./components/quote"
 import { useBridge } from "@/app/bridge-provider"
 
 export function Bridge() {
-  const { inputAmount, inputAmountUsd, isLoading, quote, onChangeInput } =
-    useBridge()
+  const {
+    inputAmount,
+    inputAmountUsd,
+    isApproved,
+    isApproving,
+    isLoading,
+    quote,
+    onApprove,
+    onChangeInput,
+    onSubmit,
+  } = useBridge()
+  console.log(isApproved)
   return (
     <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4 mb-2 ml-4">
@@ -23,10 +33,16 @@ export function Bridge() {
       {!isLoading && quote && (
         <Quote amount={quote.outputAmount} amountUsd={quote.outputAmountUsd} />
       )}
-      <div className="flex h-13 bg-element w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer text-white">
-        Approve
+      <div
+        className="flex h-13 bg-element w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer text-white"
+        onClick={onApprove}
+      >
+        {isApproving ? "Approving..." : isApproved ? "Approved" : "Approve"}
       </div>
-      <div className="flex h-13 bg-highlight w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer">
+      <div
+        className="flex h-13 bg-highlight w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer"
+        onClick={onSubmit}
+      >
         Submit
       </div>
     </div>
