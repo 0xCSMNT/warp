@@ -40,9 +40,12 @@ export function BridgeProvider(props: { children: any }) {
     const amount = Number(inputAmount)
     const usdPrice = 1
     setInputAmountUsd(`$${amount * usdPrice}`)
+    setQuote(null)
   }, [inputAmount])
 
   useEffect(() => {
+    const amnt = Number(inputAmount)
+    if (amnt <= 0) return
     const amount = parseUnits(inputAmount, 6)
     // TODO: fetch deposit quote
     const fetchQuote = async () => {
