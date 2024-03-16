@@ -6,7 +6,14 @@ import {
   useMemo,
   useState,
 } from "react"
-import { Address, parseAbi, parseUnits } from "viem"
+import {
+  Address,
+  encodeFunctionData,
+  decodeFunctionResult,
+  formatUnits,
+  parseAbi,
+  parseUnits,
+} from "viem"
 import {
   useAccount,
   usePublicClient,
@@ -17,8 +24,11 @@ import {
 import {
   BaseSourceVaultContract,
   USDC,
+  USDC_ARB_SEPOLIA,
   USDC_BASE_SEPOLIA,
 } from "@/app/constants"
+
+import { SOURCE_VAULT_ABI } from "./source-vault-abi"
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -55,7 +65,7 @@ export const BridgeProviderContext = createContext<BridgeContext>({
 
 export const useBridge = () => useContext(BridgeProviderContext)
 
-const usdc = USDC
+const usdc = USDC_ARB_SEPOLIA
 const spender = BaseSourceVaultContract
 
 export function BridgeProvider(props: { children: any }) {
@@ -137,22 +147,40 @@ export function BridgeProvider(props: { children: any }) {
   }, [inputAmount])
 
   useEffect(() => {
+    if (!address || !publicClient) return
     const amnt = Number(inputAmount)
     if (amnt <= 0) return
     const amount = parseUnits(inputAmount, 6)
-    // TODO: fetch deposit quote
     const fetchQuote = async () => {
       setIsLoading(true)
-      await delay(3000)
-      setQuote({
-        outputAmount: inputAmount,
-        outputAmountUsd: `$${inputAmount}`,
+      const encodedData = encodeFunctionData({
+        abi: SOURCE_VAULT_ABI,
+        functionName: "deposit",
+        args: [amount, address],
       })
+      console.log(encodedData)
+      const { data } = await publicClient.call({
+        account: address,
+        data: encodedData,
+        to: BaseSourceVaultContract,
+      })
+      if (data !== undefined) {
+        const value = decodeFunctionResult({
+          abi: SOURCE_VAULT_ABI,
+          functionName: "deposit",
+          data,
+        })
+        const outputAmount = formatUnits(BigInt(value), 6)
+        setQuote({
+          outputAmount,
+          outputAmountUsd: `$${outputAmount}`,
+        })
+      }
       setIsLoading(false)
     }
     fetchQuote()
     console.log(amount)
-  }, [inputAmount])
+  }, [address, inputAmount, publicClient])
 
   return (
     <BridgeProviderContext.Provider
