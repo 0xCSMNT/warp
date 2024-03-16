@@ -6,6 +6,7 @@ interface VaultProps {
   apy: string
   styles: {
     bg: string
+    text?: string
   }
 }
 
@@ -14,8 +15,9 @@ export function Vault(props: VaultProps) {
   return (
     <div
       className={clsx(
-        `flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer text-background`,
+        `flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer`,
         styles.bg,
+        styles.text ?? "text-background",
       )}
     >
       <div className={clsx(`absolute inset-0 rounded-lg blur`, styles.bg)} />
