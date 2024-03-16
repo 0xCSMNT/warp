@@ -128,16 +128,19 @@ export function BridgeProvider(props: { children: any }) {
       try {
         setIsSubmitting(true)
         const amount = parseUnits(inputAmount, 6)
+        console.log(amount)
         const encodedData = encodeFunctionData({
           abi: SOURCE_VAULT_ABI,
           functionName: "deposit",
           args: [amount, address],
         })
-        const gasLimit = await publicClient.estimateGas({
-          account: address,
-          to: sourceVaultContract,
-          data: encodedData,
-        })
+        // FIXME:
+        // const gasLimit = await publicClient.estimateGas({
+        //   account: address,
+        //   to: sourceVaultContract,
+        //   data: encodedData,
+        // })
+        const gasLimit = BigInt(500_000)
         console.log(gasLimit.toString(), "gas")
         const hash = await walletClient.writeContract({
           address: sourceVaultContract,
@@ -200,7 +203,6 @@ export function BridgeProvider(props: { children: any }) {
       setIsLoading(false)
     }
     fetchQuote()
-    console.log(amount)
   }, [address, inputAmount, publicClient])
 
   return (
