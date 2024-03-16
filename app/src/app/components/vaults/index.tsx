@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Popup } from "@/app/components/popup"
 import { Vault } from "@/app/components/vault"
 import { Bridge } from "@/app/components/bridge"
-import { useBridge } from "@/app/bridge-provider"
+import { useBridge } from "@/app/providers/bridge-provider"
 
 export function Vaults() {
   const [modalOpen, setModalOpen] = useState(false)

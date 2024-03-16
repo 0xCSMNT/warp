@@ -7,7 +7,7 @@ import { base, baseSepolia } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
-import { BridgeProvider } from "@/app/bridge-provider"
+import { BridgeProvider } from "./bridge-provider"
 
 const config = createConfig(
   getDefaultConfig({

@@ -2,7 +2,7 @@ import { Input } from "./components/input"
 import { Quote } from "./components/quote"
 import { Submitting } from "./components/submitting"
 
-import { useBridge } from "@/app/bridge-provider"
+import { useBridge } from "@/app/providers/bridge-provider"
 
 export function Bridge() {
   const {
