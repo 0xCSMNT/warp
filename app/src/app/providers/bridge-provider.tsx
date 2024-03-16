@@ -125,6 +125,8 @@ export function BridgeProvider(props: { children: any }) {
   const onSubmit = useCallback(() => {
     const submitting = async () => {
       if (!address || !publicClient || !walletClient) return
+      const amnt = Number(inputAmount)
+      if (amnt <= 0) return
       try {
         setIsSubmitting(true)
         const amount = parseUnits(inputAmount, 6)
@@ -159,9 +161,9 @@ export function BridgeProvider(props: { children: any }) {
         setIsSubmitting(false)
       }
     }
-    console.log("submit")
+    console.log("submit", inputAmount)
     submitting()
-  }, [address, publicClient, walletClient])
+  }, [address, inputAmount, publicClient, walletClient])
 
   useEffect(() => {
     const amount = Number(inputAmount)
