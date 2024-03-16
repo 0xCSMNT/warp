@@ -167,7 +167,6 @@ contract SourceVaultTest is UnitTests {
         uint256 userBalance = sourceVault.maxWithdraw(DEV_ACCOUNT_0);
 
         senderReceiver.addSourceChainId(16015286601757825753);
-        senderReceiver.allowlistedDestinationChains(16015286601757825753);
         senderReceiver.addSourceVault(address(sourceVault));
         sourceVault.addDestinationChainId(12532609583862916517);
         sourceVault.addDestinationSenderReceiver(address(senderReceiver));
