@@ -1,5 +1,5 @@
 [profile.default]
-solc = "0.8.20"
+solc = "0.8.23"
 src = "src"
 out = "out"
 libs = ['node_modules', 'lib']
@@ -7,5 +7,7 @@ remappings = [
     '@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip',
     '@chainlink/contracts/=lib/chainlink/contracts/',
     '@solmate/src/=lib/solmate/src/',
-    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/'
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
 ]
+optimizer = true
+optimizer_runs = 20_000
