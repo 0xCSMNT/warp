@@ -13,6 +13,7 @@ contract DeploySvToBase is Script {
     address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     uint64 ARBITRUM_CHAIN_ID = 4949039107694359620;
 
+    // CONTRACTS
     SourceVault public sourceVault;
 
     function run() external {
@@ -26,6 +27,7 @@ contract DeploySvToBase is Script {
         );
 
         sourceVault.allowlistDestinationChain(ARBITRUM_CHAIN_ID, true);
+        sourceVault.addDestinationChainId(ARBITRUM_CHAIN_ID);
 
     }
 }
