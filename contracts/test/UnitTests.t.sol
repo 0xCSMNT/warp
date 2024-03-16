@@ -66,6 +66,7 @@ contract UnitTests is StdCheats, Test {
         );
 
         sourceVault.allowlistDestinationChain(12532609583862916517, true);
+        sourceVault.allowlistDestinationChain(16015286601757825753, true);
         sourceVault.allowlistSourceChain(16015286601757825753, true);
         sourceVault.allowlistSourceChain(12532609583862916517, true);
         sourceVault.allowlistSender(address(senderReceiver), true);
