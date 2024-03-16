@@ -10,8 +10,8 @@ interface InputProps {
 export function Input(props: InputProps) {
   const { isLoading } = props
   return (
-    <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-6">
-      <div className="flex flew-row justify-between items-start">
+    <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-4">
+      <div className="flex flew-row justify-between items-center">
         <div>
           <input
             className="peer w-full h-full bg-transparent text-white font-sans font-normal outline-0 focus:outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border border-transparent focus:border-t-transparent text-4xl  [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
