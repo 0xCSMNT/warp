@@ -3,7 +3,7 @@ import { Quote } from "./components/quote"
 
 export function Bridge() {
   return (
-    <div className="flex flex-col w-[600px] gap-1">
+    <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4">
         <div className="text-3xl text-highlight cursor-pointer">Deposit</div>
         <div className="text-3xl text-white cursor-pointer">Withdraw</div>
