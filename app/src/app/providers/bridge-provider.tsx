@@ -136,13 +136,12 @@ export function BridgeProvider(props: { children: any }) {
           functionName: "deposit",
           args: [amount, address],
         })
-        // FIXME:
-        // const gasLimit = await publicClient.estimateGas({
-        //   account: address,
-        //   to: sourceVaultContract,
-        //   data: encodedData,
-        // })
-        const gasLimit = BigInt(500_000)
+        const gasLimit = await publicClient.estimateGas({
+          account: address,
+          to: sourceVaultContract,
+          data: encodedData,
+        })
+        // const gasLimit = BigInt(500_000)
         console.log(gasLimit.toString(), "gas")
         const hash = await walletClient.writeContract({
           address: sourceVaultContract,
