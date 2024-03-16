@@ -2,12 +2,13 @@ import Image from "next/image"
 
 interface InputProps {
   amountUsd: string
+  isLoading: boolean
   value: string
   onChange: (value: string) => void
 }
 
 export function Input(props: InputProps) {
-  const isLoading = false
+  const { isLoading } = props
   return (
     <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-6">
       <div className="flex flew-row justify-between items-start">
@@ -33,8 +34,8 @@ export function Input(props: InputProps) {
       <div className="flex flew-row justify-between items-end">
         <div className="text-base text-[#9B9B9B]">{props.amountUsd}</div>
         {isLoading && (
-          <div className="h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-white opacity-75"></span>
+          <div className="h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-75"></span>
           </div>
         )}
       </div>
