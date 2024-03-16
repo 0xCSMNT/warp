@@ -7,6 +7,8 @@ import { base } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
+import { BridgeProvider } from "@/app/bridge-provider"
+
 const config = createConfig(
   getDefaultConfig({
     chains: [base],
@@ -38,7 +40,9 @@ export const Providers = ({ children }: ProvidersProps) => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>{children}</ConnectKitProvider>
+        <ConnectKitProvider>
+          <BridgeProvider>{children}</BridgeProvider>
+        </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )
