@@ -39,7 +39,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         bytes32 indexed messageId, // The unique ID of the CCIP message.
         uint64 indexed destinationChainSelector, // The chain selector of the destination chain.
         address receiver, // The address of the receiver on the destination chain.
-        string text, // The text being sent.
+        bytes data, // The data being sent.
         address token, // The token address that was transferred.
         uint256 tokenAmount, // The token amount that was transferred.
         address feeToken, // the token address used to pay CCIP fees.
@@ -51,7 +51,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         bytes32 indexed messageId, // The unique ID of the CCIP message.
         uint64 indexed sourceChainSelector, // The chain selector of the source chain.
         address sender, // The address of the sender from the source chain.
-        string text, // The text that was received.
+        bytes data, // The data that was received.
         address token, // The token address that was transferred.
         uint256 tokenAmount // The token amount that was transferred.
     );
@@ -59,7 +59,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
     address private s_lastReceivedTokenAddress; // Store the last received token address.
     uint256 private s_lastReceivedTokenAmount; // Store the last received amount.
-    string private s_lastReceivedText; // Store the last received text.
+    bytes private s_lastReceivedData; // Store the last received text.
 
     // Mapping to keep track of allowlisted destination chains.
     mapping(uint64 => bool) public allowlistedDestinationChains;
@@ -89,13 +89,17 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         timeBasedKeeper = _timeBasedKeeper;
     }
 
-    function addThresholdBasedKeeper(address _thresholdBasedKeeper) external onlyOwner {
+    function addThresholdBasedKeeper(
+        address _thresholdBasedKeeper
+    ) external onlyOwner {
         thresholdBasedKeeper = _thresholdBasedKeeper;
     }
 
     modifier onlyKeeperOrOwner() {
         require(
-            msg.sender == timeBasedKeeper || msg.sender == owner() || msg.sender == thresholdBasedKeeper,
+            msg.sender == timeBasedKeeper ||
+                msg.sender == owner() ||
+                msg.sender == thresholdBasedKeeper,
             "Caller is not the timeBasedKeeper or owner"
         );
         _;
@@ -156,26 +160,36 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         allowlistedSenders[_sender] = allowed;
     }
 
-    function transferTokensPayLINK(
+    function _sendDataAndToken(
         uint64 _destinationChainSelector,
         address _receiver,
+        bytes memory _data,
         address _token,
         uint256 _amount
     )
-        external
-        onlyOwner
+        internal
         onlyAllowlistedDestinationChain(_destinationChainSelector)
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
-        // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
-        //  address(linkToken) means fees are paid in LINK
-        Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPTokenTransfer(
-            _receiver,
-            _token,
-            _amount,
-            address(s_linkToken)
-        );
+        Client.EVMTokenAmount[]
+            memory tokenAmounts = new Client.EVMTokenAmount[](1);
+        tokenAmounts[0] = Client.EVMTokenAmount({
+            token: _token,
+            amount: _amount
+        });
+
+        Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
+            receiver: abi.encode(_receiver), // ABI-encoded receiver address
+            data: _data,
+            tokenAmounts: tokenAmounts, // The amount and type of token being transferred
+            extraArgs: Client._argsToBytes(
+                // Additional arguments, setting gas limit to 0 as we are not sending any data
+                Client.EVMExtraArgsV1({gasLimit: 2_000_000})
+            ),
+            // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
+            feeToken: address(s_linkToken)
+        });
 
         // Get the fee required to send the message
         uint256 fees = s_router.getFee(
@@ -213,118 +227,45 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         return messageId;
     }
 
-    /// @notice Sends data and transfer tokens to receiver on the destination chain.
-    /// @notice Pay for fees in LINK.
-    /// @dev Assumes your contract has sufficient LINK to pay for CCIP fees.
-    /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
-    /// @param _receiver The address of the recipient on the destination blockchain.
-    /// @param _text The string data to be sent.
-    /// @param _token token address.
-    /// @param _amount token amount.
-    /// @return messageId The ID of the CCIP message that was sent.
-    function sendMessagePayLINK(
+    function _sendData(
         uint64 _destinationChainSelector,
         address _receiver,
-        string calldata _text,
-        address _token,
-        uint256 _amount
+        bytes memory _data
     )
-        public
-        onlyKeeperOrOwner
-        onlyAllowlistedDestinationChain(_destinationChainSelector)
-        validateReceiver(_receiver)
-        returns (bytes32 messageId)
-    {
-        // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
-        // address(linkToken) means fees are paid in LINK
-        Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
-            _receiver,
-            _text,
-            _token,
-            _amount,
-            address(s_linkToken)
-        );
-
-        // Initialize a router client instance to interact with cross-chain router
-        IRouterClient router = IRouterClient(this.getRouter());
-
-        // Get the fee required to send the CCIP message
-        uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
-
-        if (fees > s_linkToken.balanceOf(address(this)))
-            revert NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
-
-        // approve the Router to transfer LINK tokens on contract's behalf. It will spend the fees in LINK
-        s_linkToken.approve(address(router), fees);
-
-        // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
-        IERC20(_token).approve(address(router), _amount);
-
-        // Send the message through the router and store the returned message ID
-        messageId = router.ccipSend(_destinationChainSelector, evm2AnyMessage);
-
-        // Emit an event with message details
-        emit MessageSent(
-            messageId,
-            _destinationChainSelector,
-            _receiver,
-            _text,
-            _token,
-            _amount,
-            address(s_linkToken),
-            fees
-        );
-
-        // Return the message ID
-        return messageId;
-    }
-
-    /// @notice Sends data and transfer tokens to receiver on the destination chain.
-    /// @notice Pay for fees in native gas.
-    /// @dev Assumes your contract has sufficient native gas like ETH on Ethereum or MATIC on Polygon.
-    /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
-    /// @param _receiver The address of the recipient on the destination blockchain.
-    /// @param _text The string data to be sent.
-    /// @param _token token address.
-    /// @param _amount token amount.
-    /// @return messageId The ID of the CCIP message that was sent.
-    function sendMessagePayNative(
-        uint64 _destinationChainSelector,
-        address _receiver,
-        string calldata _text,
-        address _token,
-        uint256 _amount
-    )
-        external
+        internal
         onlyOwner
         onlyAllowlistedDestinationChain(_destinationChainSelector)
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
-        // address(0) means fees are paid in native gas
-        Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
-            _receiver,
-            _text,
-            _token,
-            _amount,
-            address(0)
+        //  address(linkToken) means fees are paid in LINK
+        Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
+            receiver: abi.encode(_receiver), // ABI-encoded receiver address
+            data: _data, // ABI-encoded string
+            tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array aas no tokens are transferred
+            extraArgs: Client._argsToBytes(
+                // Additional arguments, setting gas limit
+                Client.EVMExtraArgsV1({gasLimit: 2_500_000})
+            ),
+            // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
+            feeToken: address(s_linkToken)
+        });
+
+        // Get the fee required to send the message
+        uint256 fees = s_router.getFee(
+            _destinationChainSelector,
+            evm2AnyMessage
         );
 
-        // Initialize a router client instance to interact with cross-chain router
-        IRouterClient router = IRouterClient(this.getRouter());
+        if (fees > s_linkToken.balanceOf(address(this)))
+            revert NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
 
-        // Get the fee required to send the CCIP message
-        uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
-
-        if (fees > address(this).balance)
-            revert NotEnoughBalance(address(this).balance, fees);
-
-        // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
-        IERC20(_token).approve(address(router), _amount);
+        // approve the Router to transfer LINK tokens on contract's behalf. It will spend the fees in LINK
+        s_linkToken.approve(address(s_router), fees);
 
         // Send the message through the router and store the returned message ID
-        messageId = router.ccipSend{value: fees}(
+        messageId = s_router.ccipSend(
             _destinationChainSelector,
             evm2AnyMessage
         );
@@ -334,10 +275,10 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
             messageId,
             _destinationChainSelector,
             _receiver,
-            _text,
-            _token,
-            _amount,
+            _data,
             address(0),
+            0,
+            address(s_linkToken),
             fees
         );
 
@@ -349,7 +290,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
      * @notice Returns the details of the last CCIP received message.
      * @dev This function retrieves the ID, text, token address, and token amount of the last received CCIP message.
      * @return messageId The ID of the last received CCIP message.
-     * @return text The text of the last received CCIP message.
+     * @return data The data of the last received CCIP message.
      * @return tokenAddress The address of the token in the last CCIP received message.
      * @return tokenAmount The amount of the token in the last CCIP received message.
      */
@@ -358,14 +299,14 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         view
         returns (
             bytes32 messageId,
-            string memory text,
+            bytes memory data,
             address tokenAddress,
             uint256 tokenAmount
         )
     {
         return (
             s_lastReceivedMessageId,
-            s_lastReceivedText,
+            s_lastReceivedData,
             s_lastReceivedTokenAddress,
             s_lastReceivedTokenAmount
         );
@@ -383,36 +324,24 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         ) // Make sure source chain and sender are allowlisted
     {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
-        s_lastReceivedText = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
-        // Expect one token to be transferred at once, but you can transfer several tokens.
-        s_lastReceivedTokenAddress = any2EvmMessage.destTokenAmounts[0].token;
-        s_lastReceivedTokenAmount = any2EvmMessage.destTokenAmounts[0].amount;
+        s_lastReceivedData = any2EvmMessage.data; // abi-decoding of the sent text
+        s_lastReceivedTokenAddress = any2EvmMessage.destTokenAmounts.length > 0
+            ? any2EvmMessage.destTokenAmounts[0].token
+            : address(0);
+        s_lastReceivedTokenAmount = any2EvmMessage.destTokenAmounts.length > 0
+            ? any2EvmMessage.destTokenAmounts[0].amount
+            : 0;
 
-        //////////////////////////////// CALLS TO CONTRACT FROM CCIP MESSAGE /////////////////////////////
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-
-        // @dev this is the code that breaks the test for sendMessagePayLINK
-
-        (bool success, ) = address(this).call(
-            abi.encodeWithSignature(
-                s_lastReceivedText,
-                s_lastReceivedTokenAmount
-            )
-        );
+        (bool success, ) = address(this).call(any2EvmMessage.data);
         require(success, "Function call failed");
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////////////////////////////////////////////////////////////////////////////////////////
 
         emit MessageReceived(
             any2EvmMessage.messageId,
             any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
             abi.decode(any2EvmMessage.sender, (address)), // abi-decoding of the sender address,
-            abi.decode(any2EvmMessage.data, (string)),
-            any2EvmMessage.destTokenAmounts[0].token,
-            any2EvmMessage.destTokenAmounts[0].amount
+            any2EvmMessage.data,
+            s_lastReceivedTokenAddress,
+            s_lastReceivedTokenAmount
         );
     }
 

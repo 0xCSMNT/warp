@@ -48,127 +48,246 @@ contract SourceVault is
     {}
 
     // STATE VARIABLES FOR CCIP MESSAGES
-    uint64 public DestinationChainId;
-    address public DestinationSenderReceiver;
+    uint64 public destinationChainId;
+    address public destinationSenderReceiver;
 
-    // STATE VARIABLES FOR DEPOSIT LIMIT
-    uint256 public depositThreshold;
-    uint256 public currentDeposits;
-
-    // OTHER STATE VARIABLES
-    address public destinationVault;
     bool public vaultLocked;
-    uint256 public cacheAssetFromDestinationVault; // what is this
-    uint256 public withdrawThreshold; // what is this
-    uint256 public penddingWithdrawal; // what is this
-    mapping(address => bool) public isPendingToWithdraw;
-    uint256 public withdrawalExtraRatio; // 5% = 5e6
+    uint256 public cacheAssetFromDst;
+    uint256 public depositThreshold = 1e18; // keeper bot only gets triggered when depositableAsset >= depositThreshold
+    uint256 public redeemThreshold = 1e18; // keeper bot only gets triggered when penddingWithdrawal >= withdrawThreshold
+    uint256 public totalPendingToRedeem; // total pending withdrawal from isPendingToWithdraw
+    uint256 public pendingToRedeemFromDst; // pedning to request withdrawal from destination vault in the next batch
+    uint256 public lastRedeemFromDst; // last time the source vault requested withdrawal from destination vault
+    mapping(address => uint256) public lastRequestToRedeemFromDst;
+    mapping(address => uint256) public isPendingToRedeem;
+    uint256 public redeemExtraRatio; // 5% = 5e6
+
+    //
+    // ERROR
+    //
+    error VaultLocked();
+    error SufficientAssets();
+    error InsufficientAllowance();
+    error ExceedMaxRedeemableShares();
+    error ExistingPendingSharesToBeRedeemedFirst();
+    error InsufficientQuitingAmount();
+    error InsufficientAssetsToBeDeposited();
 
     // EVENTS
-    event DepositLimitExceeded(uint256 currentDeposits);
-    event CurrentDepositsReset(uint256 currentDeposits);
+    event TimeToExecute(uint256 pendingToDeposit, uint256 depositThreshold);
+    event TimeToQuit(uint256 pendingToRedeem, uint256 redeemThreshold);
 
-    // ERC4626 OVERRIDES
-    function _deposit(uint _assets) public {
-        require(!vaultLocked, "Vault is locked");
-        require(_assets > 0, "Deposit must be greater than 0");
-        deposit(_assets, msg.sender);
-        currentDeposits += _assets;
+    //
+    // MODIFIER
+    //
 
-        if (currentDeposits > depositThreshold) {
-            emit DepositLimitExceeded(currentDeposits);
+    modifier whenNotLock() {
+        if (vaultLocked) {
+            revert VaultLocked();
         }
+        _;
     }
 
-    function _withdraw(uint _shares, address _receiver) public {
-        // TODO: two scenarios
-        // 1. directly withdraw if the asset is enough
-        // 2. add address to the withdrawQueue if not enough
-        require(!vaultLocked, "Vault is locked");
-        require(_shares > 0, "No funds to withdraw");
+    //
+    // DEPOSIT/WITHDRAWAL LOGIC
+    // ERC4626 OVERRIDES
+    //
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public override whenNotLock returns (uint256 shares) {
+        shares = super.deposit(assets, receiver);
+        _checkDepositThreshold();
+    }
 
-        // Convert shares to the equivalent amount of assets
-        uint256 assets = previewRedeem(_shares);
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public override whenNotLock returns (uint256 assets) {
+        assets = super.mint(shares, receiver);
+        _checkDepositThreshold();
+    }
 
-        // Withdraw the assets to the receiver's address
-        withdraw(assets, _receiver, msg.sender);
+    function initSlowWithdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public whenNotLock returns (uint256 shares) {
+        // TODO: implement slow withdraw logic
+    }
+
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public override whenNotLock returns (uint256 shares) {
+        shares = super.withdraw(assets, receiver, owner);
+    }
+
+    function initSlowRedeem(uint256 shares, address owner) public whenNotLock {
+        if (msg.sender != owner) {
+            uint256 allowed = allowance[owner][msg.sender];
+
+            if (allowed < shares) revert InsufficientAllowance();
+        }
+
+        uint256 maxShares = maxRedeem(owner);
+        uint256 pendingToRedeem = isPendingToRedeem[owner];
+        uint256 maxRedeemableShares = maxShares - pendingToRedeem;
+
+        // prevent inaccurate withdrawal from destination vault
+        if (
+            pendingToRedeem > 0 &&
+            lastRequestToRedeemFromDst[owner] <= lastRedeemFromDst
+        ) {
+            revert ExistingPendingSharesToBeRedeemedFirst();
+        }
+
+        if (shares > maxRedeemableShares) revert ExceedMaxRedeemableShares();
+
+        totalPendingToRedeem += shares;
+        pendingToRedeemFromDst += shares;
+        isPendingToRedeem[owner] += shares;
+        lastRequestToRedeemFromDst[owner] = block.timestamp;
+
+        _checkRedeemThreshold();
+    }
+
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public override whenNotLock returns (uint256 assets) {
+        uint256 pendingToRedeem = isPendingToRedeem[owner];
+        if (pendingToRedeem > 0) {
+            uint256 diff = (shares >= pendingToRedeem)
+                ? pendingToRedeem
+                : shares;
+
+            isPendingToRedeem[owner] -= diff;
+            totalPendingToRedeem -= diff;
+
+            // prevent unwanted withdrawal from destination vault
+            if (lastRequestToRedeemFromDst[owner] > lastRedeemFromDst) {
+                pendingToRedeemFromDst -= diff;
+            }
+        }
+        assets = super.redeem(shares, receiver, owner);
     }
 
     function execute() public {
-        // TODO: Add logic to proceed the vault's strategy (cross chain yield farming)
-        // this function will call transferTokenWithData to interact with the ccip router
+        uint256 _depositableAssetToDestination = depositableAssetToDestination();
+        if (_depositableAssetToDestination < depositThreshold) {
+            revert InsufficientAssetsToBeDeposited();
+        }
+
+        _sendDataAndToken(
+            destinationChainId,
+            destinationSenderReceiver,
+            abi.encodeWithSignature(
+                "deposit(uint256)",
+                _depositableAssetToDestination
+            ),
+            address(asset),
+            _depositableAssetToDestination
+        );
     }
 
     function quit() public {
-        // TODO: Add logic to quit the vault's strategy (cross chain yield farming)
-        // withdraw amount = penddingWithdrawal * (1 + withdrawalExtraRatio)
+        if (pendingToRedeemFromDst < redeemThreshold) {
+            revert InsufficientQuitingAmount();
+        }
+
+        // TODO: return extra amount (pendingToRedeemFromDst * (1 + withdrawalExtraRatio))
+
+        // redeemableAssets = supply == 0 ? shares : shares.mulDivDown(totalAssets(), supply)
+        // shareRatio = shares / supply
+        uint256 shareRatio = pendingToRedeemFromDst.divWadDown(totalSupply);
+
+        _sendData(
+            destinationChainId,
+            destinationSenderReceiver,
+            abi.encodeWithSignature(
+                "redeem(uint256,uint256)",
+                shareRatio,
+                _currentAsset()
+            )
+        );
     }
 
-    function totalAssets() public view override returns (uint256) {
+    function receiveQuitSignal(
+        uint256 _assetFromDestinationVault
+    ) public onlyAllowlisted(destinationChainId, destinationSenderReceiver) {
+        cacheAssetFromDst = _assetFromDestinationVault;
+        lastRedeemFromDst = block.timestamp;
+        pendingToRedeemFromDst = 0;
+    }
+
+    function depositableAssetToDestination() public view returns (uint256) {
         uint256 _depositAssetBalance = asset
             .balanceOf(address(this))
             .formatDecimals(asset.decimals(), 18);
-        uint256 _totalAssets = _depositAssetBalance +
-            cacheAssetFromDestinationVault;
-        return _totalAssets;
+
+        uint256 totalPendingWithdrawal = previewRedeem(totalPendingToRedeem);
+
+        if (totalPendingWithdrawal >= _depositAssetBalance) {
+            return 0;
+        }
+
+        return _depositAssetBalance - totalPendingWithdrawal;
     }
 
-    // TODO: only allow this function to specific addresses
-    function setCacheAssetFromDestinationVault(uint256 _amount) public {
-        cacheAssetFromDestinationVault = _amount;
-    }
-
-    function addDestinationVault(address _destinationVault) public onlyOwner {
-        destinationVault = _destinationVault;
+    function totalAssets() public view override returns (uint256) {
+        uint256 _depositAssetBalance = _currentAsset();
+        uint256 _totalAssets = _depositAssetBalance + cacheAssetFromDst;
+        return _totalAssets.formatDecimals(18, asset.decimals());
     }
 
     function addDestinationChainId(
         uint64 _destinationChainId
     ) public onlyOwner {
-        DestinationChainId = _destinationChainId;
+        destinationChainId = _destinationChainId;
     }
 
     function addDestinationSenderReceiver(
         address _destinationSenderReceiver
     ) public onlyOwner {
-        DestinationSenderReceiver = _destinationSenderReceiver;
+        destinationSenderReceiver = _destinationSenderReceiver;
     }
 
     function setDepositThreshold(uint256 _threshold) public onlyOwner {
         depositThreshold = _threshold;
     }
 
-    // VAULT LOCKING FUNCTIONS
-    function lockVault() internal {
-        // Vault locking logic
+    // Owner can pause the vault for safety
+    function lockVault() external onlyOwner {
         vaultLocked = true;
     }
 
-    function unlockVault() internal {
+    function unlockVault() external onlyOwner {
         vaultLocked = false;
     }
 
-    // Owner can pause the vault for safety
-    function ownerLockVault() external onlyOwner {
-        lockVault();
+    function _checkRedeemThreshold() internal {
+        if (pendingToRedeemFromDst >= redeemThreshold) {
+            emit TimeToQuit(pendingToRedeemFromDst, redeemThreshold);
+        }
     }
 
-    function ownerUnlockVault() external onlyOwner {
-        unlockVault();
+    function _checkDepositThreshold() internal {
+        uint256 _depositableAssetToDestination = depositableAssetToDestination();
+        if (_depositableAssetToDestination >= depositThreshold) {
+            emit TimeToExecute(
+                _depositableAssetToDestination,
+                depositThreshold
+            );
+        }
     }
 
-    function batchSendToDestinationVault(string calldata messageSent) public {
-        require(asset.balanceOf(address(this)) > 0, "No assets to send");
-        sendMessagePayLINK(
-            DestinationChainId,
-            DestinationSenderReceiver,
-            messageSent,
-            address(asset),
-            asset.balanceOf(address(this))
-        );
-        currentDeposits = 0;
+    function _currentAsset() internal view returns (uint256) {
+        return
+            asset.balanceOf(address(this)).formatDecimals(asset.decimals(), 18);
     }
 
     // AUTOMATION FUNCTIONS
-    
 }
