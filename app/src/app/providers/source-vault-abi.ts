@@ -1,4 +1,4 @@
-const SOURCE_VAULT_ABI = [
+export const SOURCE_VAULT_ABI = [
   {
     type: "constructor",
     inputs: [
