@@ -9,14 +9,17 @@ interface PopupProps {
 export function Popup({ children, isOpen, onClose }: PopupProps) {
   return (
     <div
-      className={`backdrop-blur fixed inset-0 z-50 flex items-center justify-center bg-background bg-opacity-80 transition-opacity ${
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity ${
         isOpen
           ? "opacity-100 pointer-events-auto"
           : "opacity-0 pointer-events-none"
       }`}
-      onClick={onClose}
     >
-      <div>{children}</div>
+      <div
+        className="absolute backdrop-blur w-full h-full  bg-background bg-opacity-80 cursor-pointer"
+        onClick={onClose}
+      ></div>
+      <div className="relative z-99">{children}</div>
     </div>
   )
 }
