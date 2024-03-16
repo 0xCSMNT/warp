@@ -51,11 +51,6 @@ contract SourceVault is
     uint64 public DestinationChainId;
     address public DestinationSenderReceiver;
 
-    // STATE VARIABLES FOR DEPOSIT LIMIT
-    uint256 public depositThreshold;
-    uint256 public currentDeposits;
-
-    // OTHER STATE VARIABLES
     address public destinationVault;
     bool public vaultLocked;
     uint256 public cacheAssetFromDst;
@@ -68,20 +63,50 @@ contract SourceVault is
     mapping(address => uint256) public isPendingToRedeem;
     uint256 public redeemExtraRatio; // 5% = 5e6
 
+    //
+    // ERROR
+    //
+    error VaultLocked();
+    error SufficientAssets();
+    error InsufficientAllowance();
+    error ExceedMaxRedeemableShares();
+    error ExistingPendingSharesToBeRedeemedFirst();
+    error InsufficientQuitingAmount();
+    error InsufficientAssetsToBeDeposited();
+
     // EVENTS
-    event DepositLimitExceeded(uint256 currentDeposits);
-    event CurrentDepositsReset(uint256 currentDeposits);
+    event TimeToExecute(uint256 pendingToDeposit, uint256 depositThreshold);
+    event TimeToQuit(uint256 pendingToRedeem, uint256 redeemThreshold);
 
-    // ERC4626 OVERRIDES
-    function _deposit(uint _assets) public {
-        require(!vaultLocked, "Vault is locked");
-        require(_assets > 0, "Deposit must be greater than 0");
-        deposit(_assets, msg.sender);
-        currentDeposits += _assets;
+    //
+    // MODIFIER
+    //
 
-        if (currentDeposits > depositThreshold) {
-            emit DepositLimitExceeded(currentDeposits);
+    modifier whenNotLock() {
+        if (vaultLocked) {
+            revert VaultLocked();
         }
+        _;
+    }
+
+    //
+    // DEPOSIT/WITHDRAWAL LOGIC
+    // ERC4626 OVERRIDES
+    //
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public override whenNotLock returns (uint256 shares) {
+        shares = super.deposit(assets, receiver);
+        _checkDepositThreshold();
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public override whenNotLock returns (uint256 assets) {
+        assets = super.mint(shares, receiver);
+        _checkDepositThreshold();
     }
 
     function _withdraw(uint _shares, address _receiver) public {
@@ -123,17 +148,9 @@ contract SourceVault is
     }
 
     function totalAssets() public view override returns (uint256) {
-        uint256 _depositAssetBalance = asset
-            .balanceOf(address(this))
-            .formatDecimals(asset.decimals(), 18);
-        uint256 _totalAssets = _depositAssetBalance +
-            cacheAssetFromDestinationVault;
-        return _totalAssets;
-    }
-
-    // TODO: only allow this function to specific addresses
-    function setCacheAssetFromDestinationVault(uint256 _amount) public {
-        cacheAssetFromDestinationVault = _amount;
+        uint256 _depositAssetBalance = _currentAsset();
+        uint256 _totalAssets = _depositAssetBalance + cacheAssetFromDst;
+        return _totalAssets.formatDecimals(18, asset.decimals());
     }
 
     function addDestinationVault(address _destinationVault) public onlyOwner {
@@ -156,35 +173,34 @@ contract SourceVault is
         depositThreshold = _threshold;
     }
 
-    // VAULT LOCKING FUNCTIONS
-    function lockVault() internal {
-        // Vault locking logic
+    // Owner can pause the vault for safety
+    function lockVault() external onlyOwner {
         vaultLocked = true;
     }
 
-    function unlockVault() internal {
+    function unlockVault() external onlyOwner {
         vaultLocked = false;
     }
 
-    // Owner can pause the vault for safety
-    function ownerLockVault() external onlyOwner {
-        lockVault();
+    function _checkRedeemThreshold() internal {
+        if (pendingToRedeemFromDst >= redeemThreshold) {
+            emit TimeToQuit(pendingToRedeemFromDst, redeemThreshold);
+        }
     }
 
-    function ownerUnlockVault() external onlyOwner {
-        unlockVault();
+    function _checkDepositThreshold() internal {
+        uint256 _depositableAssetToDestination = depositableAssetToDestination();
+        if (_depositableAssetToDestination >= depositThreshold) {
+            emit TimeToExecute(
+                _depositableAssetToDestination,
+                depositThreshold
+            );
+        }
     }
 
-    function batchSendToDestinationVault(string calldata messageSent) public {
-        require(asset.balanceOf(address(this)) > 0, "No assets to send");
-        sendMessagePayLINK(
-            DestinationChainId,
-            DestinationSenderReceiver,
-            messageSent,
-            address(asset),
-            asset.balanceOf(address(this))
-        );
-        currentDeposits = 0;
+    function _currentAsset() internal view returns (uint256) {
+        return
+            asset.balanceOf(address(this)).formatDecimals(asset.decimals(), 18);
     }
 
     // AUTOMATION FUNCTIONS
