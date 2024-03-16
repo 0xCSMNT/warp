@@ -1,13 +1,24 @@
+import clsx from "clsx"
+
 interface VaultProps {
   name: string
   provider: string
   apy: string
+  styles: {
+    bg: string
+  }
 }
 
 export function Vault(props: VaultProps) {
+  const { styles } = props
   return (
-    <div className="bg-[#4361EE] flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer text-background">
-      <div className="absolute inset-0 bg-[#4361EE] rounded-lg blur" />
+    <div
+      className={clsx(
+        `flex items-start rounded-3xl shadow-lg h-60 w-60 relative cursor-pointer text-background`,
+        styles.bg,
+      )}
+    >
+      <div className={clsx(`absolute inset-0 rounded-lg blur`, styles.bg)} />
       <div className="relative px-6 py-4 shadow-inner rounded-3xl flex flex-col justify-between h-full">
         <div>
           <div className="font-light text-sm">{props.provider}</div>
