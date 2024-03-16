@@ -1,6 +1,7 @@
 import Image from "next/image"
 
 export function Input() {
+  const isLoading = true
   return (
     <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-6">
       <div className="flex flew-row justify-between items-start">
@@ -15,8 +16,13 @@ export function Input() {
           <div>USDC</div>
         </div>
       </div>
-      <div>
+      <div className="flex flew-row justify-between items-end">
         <div className="text-base text-[#9B9B9B]">$0</div>
+        {isLoading && (
+          <div className="h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-white opacity-75"></span>
+          </div>
+        )}
       </div>
     </div>
   )
