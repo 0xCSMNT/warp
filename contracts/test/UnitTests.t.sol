@@ -65,7 +65,7 @@ contract UnitTests is StdCheats, Test {
             "DV"
         );
 
-        sourceVault.allowlistDestinationChain(12532609583862916517, true);
+        sourceVault.allowlistDestinationChain(16015286601757825753, true);
 
         receiver.allowlistSourceChain(16015286601757825753, true);
         receiver.allowlistSender(address(sourceVault), true);
@@ -186,31 +186,6 @@ contract UnitTests is StdCheats, Test {
         sourceVault.deposit(TOKEN_TRANSFER_AMOUNT, DEV_ACCOUNT_0);
         assertEq(sourceVault.totalAssets(), TOKEN_TRANSFER_AMOUNT);
         vm.stopPrank();
-    }
-
-    // test that user can deposit from receiver into destination vault
-    function testDepositToDestinationVault() public {
-        vm.startPrank(DEV_ACCOUNT_0);
-        ccipBnM.transfer(address(senderReceiver), TOKEN_TRANSFER_AMOUNT);
-        console2.log(
-            "SenderReceiver Balance: ",
-            ccipBnM.balanceOf(address(senderReceiver))
-        );
-        senderReceiver.DepositToDestinationVault(TOKEN_TRANSFER_AMOUNT);
-        console2.log(
-            "DestinationVault Balance: ",
-            ccipBnM.balanceOf(address(destinationVault))
-        );
-        console2.log(
-            "SenderReceiver Closing Balance:",
-            ccipBnM.balanceOf(address(senderReceiver))
-        );
-
-        assertEq(
-            ccipBnM.balanceOf(address(destinationVault)),
-            TOKEN_TRANSFER_AMOUNT,
-            "DestinationVault did not receive the expected amount of tokens."
-        );
     }
 
     // test that vault can be locked and cause a revert when depositing

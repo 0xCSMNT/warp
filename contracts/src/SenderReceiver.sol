@@ -14,6 +14,8 @@ contract SenderReceiver is ProgrammableTokenTransfers {
     ) ProgrammableTokenTransfers(_router, _link) {}
 
     // STATE VARIABLES
+    uint64 public sourceChainId;
+    address public sourceVault;
     address public destinationVault;
     address public vaultToken;
     uint8 public vaultTokenDecimals;
@@ -33,10 +35,19 @@ contract SenderReceiver is ProgrammableTokenTransfers {
         vaultTokenDecimals = _decimals;
     }
 
-    function DepositToDestinationVault(uint256 _amount) public {
+    function addSourceChainId(uint64 _id) public onlyOwner {
+        sourceChainId = _id;
+    }
+
+    function addSourceVault(address _sourceVault) public onlyOwner {
+        sourceVault = _sourceVault;
+    }
+
+    function deposit(
+        uint256 _amount
+    ) public onlyAllowlisted(sourceChainId, sourceVault) {
         ERC20(vaultToken).approve(destinationVault, _amount);
         IERC4626(destinationVault).deposit(_amount, address(this));
-        console2.log("msg.sender in deposit function:", msg.sender);
     }
 
     function withdraw(uint256 amount) public {

@@ -148,8 +148,10 @@ contract SourceVaultTest is UnitTests {
         depositTokensToSourceVault(); // 10e18
         uint256 userBalance = sourceVault.maxWithdraw(DEV_ACCOUNT_0);
 
-        sourceVault.addDestinationChainId(12532609583862916517);
+        sourceVault.addDestinationChainId(16015286601757825753);
         sourceVault.addDestinationSenderReceiver(address(senderReceiver));
+        senderReceiver.addSourceChainId(16015286601757825753);
+        senderReceiver.addSourceVault(address(sourceVault));
         sourceVault.execute();
 
         uint256 senderReceiverBalance = destinationVault.balanceOf(
