@@ -1,7 +1,9 @@
+import { useState } from "react"
 import { Input } from "./components/input"
 import { Quote } from "./components/quote"
 
 export function Bridge() {
+  const [input, setInput] = useState("0")
   return (
     <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4">
@@ -9,7 +11,7 @@ export function Bridge() {
         <div className="text-3xl text-white cursor-pointer">Withdraw</div>
       </div>
       <div>
-        <Input />
+        <Input onChange={(val) => setInput(val)} value={input} />
       </div>
       <Quote amount={"10"} usd={"$0"} />
       <div className="flex h-13 bg-element w-full items-center p-4 justify-center rounded-full text-xl font-base cursor-pointer text-white">

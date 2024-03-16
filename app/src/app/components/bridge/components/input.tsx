@@ -1,11 +1,23 @@
 import Image from "next/image"
 
-export function Input() {
+interface InputProps {
+  value: string
+  onChange: (value: string) => void
+}
+
+export function Input(props: InputProps) {
   const isLoading = false
   return (
     <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-6">
       <div className="flex flew-row justify-between items-start">
-        <div></div>
+        <div>
+          <input
+            className="peer w-full h-full bg-transparent text-white font-sans font-normal outline-0 focus:outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border border-transparent focus:border-t-transparent text-4xl"
+            placeholder="0"
+            onChange={(e) => props.onChange(e.target.value)}
+            value={props.value}
+          />
+        </div>
         <div className="flex flex-row gap-2 items-center text-lg font-medium text-white bg-element2 px-4 py-2 rounded-full">
           <Image
             alt="arbitrum logo"
