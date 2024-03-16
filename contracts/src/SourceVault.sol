@@ -299,6 +299,16 @@ contract SourceVault is
     }
 
     function performUpkeep(bytes calldata performData) external {
-        // increaseTempDepositCounter();
+        if (
+            keccak256("TimeToExecute(uint256,uint256)") ==
+            abi.decode(performData, (bytes32))
+        ) {
+            execute();
+        } else if (
+            keccak256("TimeToQuit(uint256,uint256)") ==
+            abi.decode(performData, (bytes32))
+        ) {
+            quit();
+        }
     }
 }
