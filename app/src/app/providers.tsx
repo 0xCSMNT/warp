@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import React from "react";
+import React from "react"
 
-import { WagmiProvider, createConfig, http } from "wagmi";
-import { base } from "wagmi/chains";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { WagmiProvider, createConfig, http } from "wagmi"
+import { base } from "wagmi/chains"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
 const config = createConfig(
   getDefaultConfig({
@@ -13,7 +13,7 @@ const config = createConfig(
     transports: {
       [base.id]: http(
         `https://base-mainnet.g.alchemy.com/v2/${process.env
-          .NEXT_PUBLIC_ALCHEMY_ID!}`
+          .NEXT_PUBLIC_ALCHEMY_ID!}`,
       ),
     },
 
@@ -25,13 +25,13 @@ const config = createConfig(
     appDescription: "warp warp",
     appUrl: "https://warp.xyz", // your app's url
     appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
-  })
-);
+  }),
+)
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 interface ProvidersProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export const Providers = ({ children }: ProvidersProps) => {
@@ -41,5 +41,5 @@ export const Providers = ({ children }: ProvidersProps) => {
         <ConnectKitProvider>{children}</ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  );
-};
+  )
+}
