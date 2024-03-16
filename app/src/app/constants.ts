@@ -1,5 +1,5 @@
 export const BaseSourceVaultContractArbSepolia =
-  "0x655609e515d122B82bCeBd7a76a6C9c8DE650A88"
+  "0xe510602CCd71197043A53CF3206414fc5a615b44"
 // FIXME:
 export const BaseSourceVaultContractBase =
   "0x32482F92244Cc5Abac40313EA8D327Dd49B23C1a"
