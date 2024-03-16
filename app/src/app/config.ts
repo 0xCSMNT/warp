@@ -2,7 +2,7 @@ import { arbitrumSepolia, base, baseSepolia } from "wagmi/chains"
 import { Chain } from "wagmi/chains"
 
 import {
-  BaseSourceVaultContract,
+  BaseSourceVaultContractArbSepolia,
   USDC,
   USDC_ARB_SEPOLIA,
   USDC_BASE_SEPOLIA,
@@ -20,5 +20,5 @@ export const chains: readonly [Chain, ...Chain[]] | undefined = [
 ]
 
 // Config bridging (based on network)
-export const sourceVaultContract = BaseSourceVaultContract
+export const sourceVaultContract = BaseSourceVaultContractArbSepolia
 export const inputTokenUsdc = USDC_ARB_SEPOLIA
