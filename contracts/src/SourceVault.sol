@@ -48,8 +48,8 @@ contract SourceVault is
     {}
 
     // STATE VARIABLES FOR CCIP MESSAGES
-    uint64 public DestinationChainId;
-    address public DestinationSenderReceiver;
+    uint64 public destinationChainId;
+    address public destinationSenderReceiver;
 
     address public destinationVault;
     bool public vaultLocked;
@@ -177,8 +177,21 @@ contract SourceVault is
     }
 
     function execute() public {
-        // TODO: Add logic to proceed the vault's strategy (cross chain yield farming)
-        // this function will call transferTokenWithData to interact with the ccip router
+        uint256 _depositableAssetToDestination = depositableAssetToDestination();
+        if (_depositableAssetToDestination < depositThreshold) {
+            revert InsufficientAssetsToBeDeposited();
+        }
+
+        _sendDataAndToken(
+            destinationChainId,
+            destinationSenderReceiver,
+            abi.encodeWithSignature(
+                "deposit(uint256)",
+                _depositableAssetToDestination
+            ),
+            address(asset),
+            _depositableAssetToDestination
+        );
     }
 
     function quit() public {
@@ -213,13 +226,13 @@ contract SourceVault is
     function addDestinationChainId(
         uint64 _destinationChainId
     ) public onlyOwner {
-        DestinationChainId = _destinationChainId;
+        destinationChainId = _destinationChainId;
     }
 
     function addDestinationSenderReceiver(
         address _destinationSenderReceiver
     ) public onlyOwner {
-        DestinationSenderReceiver = _destinationSenderReceiver;
+        destinationSenderReceiver = _destinationSenderReceiver;
     }
 
     function setDepositThreshold(uint256 _threshold) public onlyOwner {

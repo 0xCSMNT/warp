@@ -142,6 +142,22 @@ contract SourceVaultTest is UnitTests {
         assertTrue(false, "TODO");
     }
 
+    // execute
+
+    function testExecute() public {
+        depositTokensToSourceVault(); // 10e18
+        uint256 userBalance = sourceVault.maxWithdraw(DEV_ACCOUNT_0);
+
+        sourceVault.addDestinationChainId(12532609583862916517);
+        sourceVault.addDestinationSenderReceiver(address(senderReceiver));
+        sourceVault.execute();
+
+        uint256 senderReceiverBalance = destinationVault.balanceOf(
+            address(senderReceiver)
+        );
+        assertEq(userBalance, senderReceiverBalance, "assets are not equal");
+    }
+
     // helper
 
     function _initSlowRedeem() internal {

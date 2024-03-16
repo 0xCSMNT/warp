@@ -16,16 +16,21 @@ contract SenderReceiver is ProgrammableTokenTransfers {
     // STATE VARIABLES
     address public destinationVault;
     address public vaultToken;
+    uint8 public vaultTokenDecimals;
 
     // FUNCTIONS
 
     // Add destination Vault
-    function addDestinationVault(address _destinationVault) public {
+    function addDestinationVault(address _destinationVault) public onlyOwner {
         destinationVault = _destinationVault;
     }
 
-    function addVaultToken(address _token) public {
+    function addVaultToken(address _token) public onlyOwner {
         vaultToken = _token;
+    }
+
+    function updateVaultTokenDeciamls(uint8 _decimals) public onlyOwner {
+        vaultTokenDecimals = _decimals;
     }
 
     function DepositToDestinationVault(uint256 _amount) public {

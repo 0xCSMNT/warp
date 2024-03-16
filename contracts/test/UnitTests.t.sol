@@ -160,26 +160,6 @@ contract UnitTests is StdCheats, Test {
 
     ////////// CCIP TEST FUNCTIONS //////////
 
-    // Test that the SourceVault can transfer tokens only to the receiver
-    function testTransferTokensPayLINK() public {
-        transferLinkTokensToSourceVault();
-        depositTokensToSourceVault();
-        sourceVault.transferTokensPayLINK(
-            uint64(12532609583862916517),
-            address(receiver),
-            address(ccipBnM),
-            uint256(TOKEN_TRANSFER_AMOUNT)
-        );
-        uint256 receiverBalance = ccipBnM.balanceOf(address(receiver));
-
-        console2.log("Receiver Balance: ", receiverBalance / 1e18);
-        assertEq(
-            receiverBalance,
-            TOKEN_TRANSFER_AMOUNT,
-            "receiver did not receive the expected amount of tokens."
-        );
-    }
-
     ////////// ERC4626 TEST FUNCTIONS //////////
 
     // test that user can approve and deposit
@@ -253,100 +233,5 @@ contract UnitTests is StdCheats, Test {
         sourceVault.deposit(TOKEN_TRANSFER_AMOUNT, DEV_ACCOUNT_0);
         assertEq(sourceVault.totalAssets(), TOKEN_TRANSFER_AMOUNT);
         vm.stopPrank();
-    }
-
-    ////////// CROSS CHAIN VAULT TEST FUNCTIONS //////////
-
-    // test that source vault can send to receiver and user can deposit from receiver to destination vault
-    function testCrossChainTransactionAndDeposit() public {
-        transferLinkTokensToSourceVault();
-        depositTokensToSourceVault();
-        sourceVault.sendMessagePayLINK(
-            uint64(12532609583862916517),
-            address(senderReceiver),
-            "Tokens Arrived",
-            address(ccipBnM),
-            uint256(TOKEN_TRANSFER_AMOUNT)
-        );
-
-        (
-            ,
-            string memory messageReceived,
-            ,
-            uint256 tokensReceived
-        ) = senderReceiver.getLastReceivedMessageDetails();
-
-        console2.log("Message Received: ", messageReceived);
-        console2.log("Tokens Received: ", tokensReceived / 1e18);
-
-        senderReceiver.DepositToDestinationVault(TOKEN_TRANSFER_AMOUNT);
-        console2.log("msg.sender in test script:", msg.sender);
-
-        assertEq(
-            ccipBnM.balanceOf(address(destinationVault)),
-            TOKEN_TRANSFER_AMOUNT,
-            "DestinationVault did not receive the expected amount of tokens."
-        );
-
-        uint256 userShareBalance = sourceVault.balanceOf(DEV_ACCOUNT_0);
-        uint256 senderReceiverShareBalance = destinationVault.balanceOf(
-            address(senderReceiver)
-        );
-
-        assertEq(
-            userShareBalance,
-            senderReceiverShareBalance,
-            "Shares are not equal"
-        );
-
-        console2.log("User Share Balance: ", userShareBalance);
-        console2.log(
-            "SenderReceiver Share Balance: ",
-            senderReceiverShareBalance
-        );
-    }
-
-    // test that can send a ccip message and call deposit function on receiver
-    function testCrossChainFunctionCallDeposit() public {
-        string memory messageSent = "DepositToDestinationVault(uint256)";
-        transferLinkTokensToSourceVault();
-        depositTokensToSourceVault();
-        sourceVault.sendMessagePayLINK(
-            uint64(12532609583862916517),
-            address(senderReceiver),
-            messageSent,
-            address(ccipBnM),
-            uint256(TOKEN_TRANSFER_AMOUNT)
-        );
-        console2.log(
-            "SenderReceiver Balance: ",
-            ccipBnM.balanceOf(address(senderReceiver))
-        );
-        console2.log(
-            "DestinationVault Balance: ",
-            ccipBnM.balanceOf(address(destinationVault))
-        );
-        assertEq(
-            ccipBnM.balanceOf(address(destinationVault)),
-            TOKEN_TRANSFER_AMOUNT,
-            "DestinationVault did not receive the expected amount of tokens."
-        );
-
-        uint256 userShareBalance = sourceVault.balanceOf(DEV_ACCOUNT_0);
-        uint256 senderReceiverShareBalance = destinationVault.balanceOf(
-            address(senderReceiver)
-        );
-
-        assertEq(
-            userShareBalance,
-            senderReceiverShareBalance,
-            "Shares are not equal"
-        );
-
-        console2.log("User Share Balance: ", userShareBalance / 1e18);
-        console2.log(
-            "SenderReceiver Share Balance: ",
-            senderReceiverShareBalance / 1e18
-        );
     }
 }
