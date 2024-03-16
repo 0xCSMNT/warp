@@ -1,7 +1,7 @@
 import Image from "next/image"
 
 export function Input() {
-  const isLoading = true
+  const isLoading = false
   return (
     <div className="flex flex-col bg-element rounded-xl w-full p-4 gap-6">
       <div className="flex flew-row justify-between items-start">
