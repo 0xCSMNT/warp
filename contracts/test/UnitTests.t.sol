@@ -65,15 +65,22 @@ contract UnitTests is StdCheats, Test {
             "DV"
         );
 
-        sourceVault.allowlistDestinationChain(16015286601757825753, true);
+        sourceVault.allowlistDestinationChain(12532609583862916517, true);
+        sourceVault.allowlistSourceChain(16015286601757825753, true);
+        sourceVault.allowlistSourceChain(12532609583862916517, true);
+        sourceVault.allowlistSender(address(senderReceiver), true);
+        sourceVault.addDestinationSenderReceiver(address(senderReceiver));
 
         receiver.allowlistSourceChain(16015286601757825753, true);
         receiver.allowlistSender(address(sourceVault), true);
 
+        senderReceiver.allowlistDestinationChain(16015286601757825753, true);
         senderReceiver.allowlistSourceChain(16015286601757825753, true);
         senderReceiver.allowlistSender(address(sourceVault), true);
         senderReceiver.addDestinationVault(address(destinationVault));
+        senderReceiver.addSourceVault(address(sourceVault));
         senderReceiver.addVaultToken(address(ccipBnM));
+        senderReceiver.updateVaultTokenDeciamls(ccipBnM.decimals());
     }
 
     ////////// HELPER FUNCTIONS //////////

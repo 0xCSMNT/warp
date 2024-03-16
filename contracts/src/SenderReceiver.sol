@@ -5,9 +5,13 @@ pragma solidity ^0.8.0;
 import {ProgrammableTokenTransfers} from "./ProgrammableTokenTransfers.sol";
 import {ERC20} from "@solmate/src/tokens/ERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {console2} from "forge-std/Test.sol";
-
+import {LibFormatter} from "./utils/LibFormatter.sol";
+import {FixedPointMathLib} from "@solmate/src/utils/FixedPointMathLib.sol";
+import "forge-std/console.sol";
 contract SenderReceiver is ProgrammableTokenTransfers {
+    using FixedPointMathLib for uint256;
+    using LibFormatter for uint256;
+
     constructor(
         address _router,
         address _link
@@ -50,10 +54,37 @@ contract SenderReceiver is ProgrammableTokenTransfers {
         IERC4626(destinationVault).deposit(_amount, address(this));
     }
 
-    function withdraw(uint256 amount) public {
-        // TODO:
-        // withdraw assets from the the destination vault
-        // this needs to be called by ccip router
-        // this function will also call transferTokenWithData to interact with the ccip router
+    function redeem(
+        uint256 shareRatio,
+        uint256 assetsFromSrc
+    ) public onlyAllowlisted(sourceChainId, sourceVault) {
+        uint256 totalAssets = assetsFromSrc +
+            IERC4626(destinationVault).balanceOf(address(this));
+        uint256 assets = _convertToAssets(shareRatio, totalAssets)
+            .formatDecimals(18, vaultTokenDecimals);
+
+        IERC4626(destinationVault).withdraw(
+            assets,
+            address(this),
+            address(this)
+        );
+        // call router
+        _sendDataAndToken(
+            sourceChainId,
+            sourceVault,
+            abi.encodeWithSignature(
+                "receiveQuitSignal(uint256)",
+                IERC4626(destinationVault).balanceOf(address(this))
+            ),
+            vaultToken,
+            assets
+        );
+    }
+
+    function _convertToAssets(
+        uint256 shareRatio,
+        uint256 totalAssets
+    ) internal pure returns (uint256) {
+        return shareRatio.mulWadDown(totalAssets);
     }
 }

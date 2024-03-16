@@ -51,7 +51,6 @@ contract SourceVault is
     uint64 public destinationChainId;
     address public destinationSenderReceiver;
 
-    address public destinationVault;
     bool public vaultLocked;
     uint256 public cacheAssetFromDst;
     uint256 public depositThreshold = 1e18; // keeper bot only gets triggered when depositableAsset >= depositThreshold
@@ -195,8 +194,33 @@ contract SourceVault is
     }
 
     function quit() public {
-        // TODO: Add logic to quit the vault's strategy (cross chain yield farming)
-        // withdraw amount = penddingWithdrawal * (1 + withdrawalExtraRatio)
+        if (pendingToRedeemFromDst < redeemThreshold) {
+            revert InsufficientQuitingAmount();
+        }
+
+        // TODO: return extra amount (pendingToRedeemFromDst * (1 + withdrawalExtraRatio))
+
+        // redeemableAssets = supply == 0 ? shares : shares.mulDivDown(totalAssets(), supply)
+        // shareRatio = shares / supply
+        uint256 shareRatio = pendingToRedeemFromDst.divWadDown(totalSupply);
+
+        _sendData(
+            destinationChainId,
+            destinationSenderReceiver,
+            abi.encodeWithSignature(
+                "redeem(uint256,uint256)",
+                shareRatio,
+                _currentAsset()
+            )
+        );
+    }
+
+    function receiveQuitSignal(
+        uint256 _assetFromDestinationVault
+    ) public onlyAllowlisted(destinationChainId, destinationSenderReceiver) {
+        cacheAssetFromDst = _assetFromDestinationVault;
+        lastRedeemFromDst = block.timestamp;
+        pendingToRedeemFromDst = 0;
     }
 
     function depositableAssetToDestination() public view returns (uint256) {
@@ -217,10 +241,6 @@ contract SourceVault is
         uint256 _depositAssetBalance = _currentAsset();
         uint256 _totalAssets = _depositAssetBalance + cacheAssetFromDst;
         return _totalAssets.formatDecimals(18, asset.decimals());
-    }
-
-    function addDestinationVault(address _destinationVault) public onlyOwner {
-        destinationVault = _destinationVault;
     }
 
     function addDestinationChainId(

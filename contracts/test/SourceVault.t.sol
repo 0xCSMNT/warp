@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {Test, console2} from "forge-std/Test.sol";
 import {SourceVault} from "../src/SourceVault.sol";
 import {UnitTests} from "./UnitTests.t.sol";
-
+import "forge-std/console.sol";
 contract SourceVaultTest is UnitTests {
     modifier asDevAccount0() {
         depositTokensToSourceVault();
@@ -158,6 +158,63 @@ contract SourceVaultTest is UnitTests {
             address(senderReceiver)
         );
         assertEq(userBalance, senderReceiverBalance, "assets are not equal");
+    }
+
+    // quit
+
+    function testQuit() public {
+        depositTokensToSourceVault(); // 10e18
+        uint256 userBalance = sourceVault.maxWithdraw(DEV_ACCOUNT_0);
+
+        senderReceiver.addSourceChainId(16015286601757825753);
+        senderReceiver.allowlistedDestinationChains(16015286601757825753);
+        senderReceiver.addSourceVault(address(sourceVault));
+        sourceVault.addDestinationChainId(12532609583862916517);
+        sourceVault.addDestinationSenderReceiver(address(senderReceiver));
+        sourceVault.execute();
+
+        vm.startPrank(DEV_ACCOUNT_0);
+        uint256 maxRedeem = sourceVault.maxRedeem(DEV_ACCOUNT_0);
+
+        sourceVault.initSlowRedeem(maxRedeem, DEV_ACCOUNT_0);
+        vm.stopPrank();
+
+        uint256 initialTimestamp = block.timestamp;
+        skip(1);
+        sourceVault.quit();
+
+        uint256 senderReceiverBalance = destinationVault.balanceOf(
+            address(senderReceiver)
+        );
+
+        uint256 assetsOfSourceVault = ccipBnM.balanceOf(address(sourceVault));
+
+        assertEq(
+            senderReceiverBalance,
+            0,
+            "assets on destination chain should be 0"
+        );
+
+        assertEq(
+            assetsOfSourceVault,
+            userBalance,
+            "assets on source chain should be equal to user balance"
+        );
+        assertEq(
+            sourceVault.isPendingToRedeem(DEV_ACCOUNT_0),
+            userBalance,
+            "isPendingToRedeem(DEV_ACCOUNT_0) != 0"
+        );
+        assertEq(
+            block.timestamp - initialTimestamp,
+            1,
+            "lastRedeemFromDst is incorrect"
+        );
+        assertEq(
+            sourceVault.totalAssets(),
+            assetsOfSourceVault,
+            "totalAssets is incorrect"
+        );
     }
 
     // helper
