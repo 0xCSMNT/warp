@@ -4,8 +4,8 @@ export function Bridge() {
   return (
     <div className="flex flex-col w-[600px] gap-2">
       <div className="flex flex-row gap-4">
-        <div className="text-3xl text-highlight">Deposit</div>
-        <div className="text-3xl text-white">Withdraw</div>
+        <div className="text-3xl text-highlight cursor-pointer">Deposit</div>
+        <div className="text-3xl text-white cursor-pointer">Withdraw</div>
       </div>
       <div>
         <Input />
