@@ -51,7 +51,9 @@ export function Bridge() {
             <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-background opacity-75"></span>
           </div>
         )}
-        <div>{isSubmitting ? "Submitting..." : "Submit"}</div>
+        <div className="text-background">
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </div>
       </div>
     </div>
   )

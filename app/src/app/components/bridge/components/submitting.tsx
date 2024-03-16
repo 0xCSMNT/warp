@@ -3,8 +3,8 @@ export function Submitting() {
     <div className="bg-black flex flex-row rounded-xl h-full justify-center items-end p-10 gap-6">
       <iframe
         src="https://giphy.com/embed/MaThe6p8WAKbf9NDDM"
-        width="100px"
-        height="100px"
+        width="200px"
+        height="200px"
         className="giphy-embed"
         allowFullScreen
       ></iframe>

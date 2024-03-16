@@ -122,7 +122,7 @@ export function BridgeProvider(props: { children: any }) {
     const submitting = async () => {
       setIsSubmitting(true)
       // TODO: submit tx
-      await delay(2000)
+      await delay(10_000)
       setIsSubmitting(false)
     }
     console.log("submit")
