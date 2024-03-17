@@ -1,7 +1,9 @@
+import clsx from "clsx"
 import { useState } from "react"
 
 import { Deposit } from "@/app/components/bridge/components/deposit"
 import { Submitting } from "@/app/components/bridge/components/submitting"
+import { Withdraw } from "@/app/components/bridge/components/withdraw"
 import { useBridge } from "@/app/providers/bridge-provider"
 
 export function Bridge() {
@@ -18,19 +20,26 @@ export function Bridge() {
     <div className="flex flex-col w-[500px] gap-1">
       <div className="flex flex-row gap-4 mb-2 ml-4">
         <div
-          className="text-3xl text-highlight cursor-pointer"
+          className={clsx(
+            "text-3xl cursor-pointer",
+            showDeposit ? "text-highlight" : "text-white",
+          )}
           onClick={() => toggleDepositWithdraw(true)}
         >
           Deposit
         </div>
         <div
-          className="text-3xl text-white cursor-pointer"
+          className={clsx(
+            "text-3xl cursor-pointer",
+            !showDeposit ? "text-highlight" : "text-white",
+          )}
           onClick={() => toggleDepositWithdraw(false)}
         >
           Withdraw
         </div>
       </div>
-      <Deposit />
+      {showDeposit && <Deposit />}
+      {!showDeposit && <Withdraw />}
     </div>
   )
 }
