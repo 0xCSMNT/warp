@@ -24,8 +24,6 @@ import {
 import { inputTokenUsdc, sourceVaultContract } from "@/app/config"
 import { SOURCE_VAULT_ABI } from "./source-vault-abi"
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 interface FormattedQuote {
   outputAmount: string
   outputAmountUsd: string
@@ -59,7 +57,7 @@ export const WithdrawProviderContext = createContext<WithdrawContext>({
 
 export const useWithdraw = () => useContext(WithdrawProviderContext)
 
-const usdc = inputTokenUsdc
+const usdc = sourceVaultContract
 const spender = sourceVaultContract
 
 export function WithdrawProvider(props: { children: any }) {
@@ -180,8 +178,8 @@ export function WithdrawProvider(props: { children: any }) {
       setIsLoading(true)
       const encodedData = encodeFunctionData({
         abi: SOURCE_VAULT_ABI,
-        functionName: "deposit",
-        args: [amount, address],
+        functionName: "previewRedeem",
+        args: [amount],
       })
       console.log(encodedData)
       const { data } = await publicClient.call({
@@ -192,7 +190,7 @@ export function WithdrawProvider(props: { children: any }) {
       if (data !== undefined) {
         const value = decodeFunctionResult({
           abi: SOURCE_VAULT_ABI,
-          functionName: "deposit",
+          functionName: "previewRedeem",
           data,
         })
         const outputAmount = formatUnits(BigInt(value), 6)
