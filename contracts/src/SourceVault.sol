@@ -7,6 +7,7 @@ import {ERC4626} from "@solmate/src/tokens/ERC4626.sol";
 import {FixedPointMathLib} from "@solmate/src/utils/FixedPointMathLib.sol";
 import {LibFormatter} from "./utils/LibFormatter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "forge-std/console.sol";
 
 struct Log {
     uint256 index; // Index of the log in the block
@@ -53,8 +54,8 @@ contract SourceVault is
 
     bool public vaultLocked;
     uint256 public cacheAssetFromDst;
-    uint256 public depositThreshold = 1e18; // keeper bot only gets triggered when depositableAsset >= depositThreshold
-    uint256 public redeemThreshold = 1e18; // keeper bot only gets triggered when penddingWithdrawal >= withdrawThreshold
+    uint256 public depositThreshold = 0.1e6; // keeper bot only gets triggered when depositableAsset >= depositThreshold
+    uint256 public redeemThreshold = 0.1e6; // keeper bot only gets triggered when penddingWithdrawal >= withdrawThreshold
     uint256 public totalPendingToRedeem; // total pending withdrawal from isPendingToWithdraw
     uint256 public pendingToRedeemFromDst; // pedning to request withdrawal from destination vault in the next batch
     uint256 public lastRedeemFromDst; // last time the source vault requested withdrawal from destination vault
@@ -181,6 +182,10 @@ contract SourceVault is
             revert InsufficientAssetsToBeDeposited();
         }
 
+        // need to pre cache the asset, otherwise,
+        // `convertToAssets` will divide to 0 in the very beginning
+        cacheAssetFromDst += _depositableAssetToDestination;
+
         _sendDataAndToken(
             destinationChainId,
             destinationSenderReceiver,
@@ -202,7 +207,10 @@ contract SourceVault is
 
         // redeemableAssets = supply == 0 ? shares : shares.mulDivDown(totalAssets(), supply)
         // shareRatio = shares / supply
-        uint256 shareRatio = pendingToRedeemFromDst.divWadDown(totalSupply);
+        uint256 shareRatio = pendingToRedeemFromDst.mulDivDown(
+            10 ** asset.decimals(),
+            totalSupply
+        );
 
         _sendData(
             destinationChainId,
@@ -215,18 +223,15 @@ contract SourceVault is
         );
     }
 
-    function receiveQuitSignal(
-        uint256 _assetFromDestinationVault
-    ) public onlyAllowlisted(destinationChainId, destinationSenderReceiver) {
+    function receiveQuitSignal(uint256 _assetFromDestinationVault) public {
+        _onlySelf();
         cacheAssetFromDst = _assetFromDestinationVault;
         lastRedeemFromDst = block.timestamp;
         pendingToRedeemFromDst = 0;
     }
 
     function depositableAssetToDestination() public view returns (uint256) {
-        uint256 _depositAssetBalance = asset
-            .balanceOf(address(this))
-            .formatDecimals(asset.decimals(), 18);
+        uint256 _depositAssetBalance = asset.balanceOf(address(this));
 
         uint256 totalPendingWithdrawal = previewRedeem(totalPendingToRedeem);
 
@@ -240,7 +245,7 @@ contract SourceVault is
     function totalAssets() public view override returns (uint256) {
         uint256 _depositAssetBalance = _currentAsset();
         uint256 _totalAssets = _depositAssetBalance + cacheAssetFromDst;
-        return _totalAssets.formatDecimals(18, asset.decimals());
+        return _totalAssets;
     }
 
     function addDestinationChainId(
@@ -257,6 +262,10 @@ contract SourceVault is
 
     function setDepositThreshold(uint256 _threshold) public onlyOwner {
         depositThreshold = _threshold;
+    }
+
+    function setRedeemThreshold(uint256 _threshold) public onlyOwner {
+        redeemThreshold = _threshold;
     }
 
     // Owner can pause the vault for safety
@@ -285,9 +294,29 @@ contract SourceVault is
     }
 
     function _currentAsset() internal view returns (uint256) {
-        return
-            asset.balanceOf(address(this)).formatDecimals(asset.decimals(), 18);
+        return asset.balanceOf(address(this));
     }
 
     // AUTOMATION FUNCTIONS
+    function checkLog(
+        Log calldata log,
+        bytes memory
+    ) external pure returns (bool upkeepNeeded, bytes memory performData) {
+        upkeepNeeded = true;
+        performData = abi.encode(log.topics[0]);
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        if (
+            keccak256("TimeToExecute(uint256,uint256)") ==
+            abi.decode(performData, (bytes32))
+        ) {
+            execute();
+        } else if (
+            keccak256("TimeToQuit(uint256,uint256)") ==
+            abi.decode(performData, (bytes32))
+        ) {
+            quit();
+        }
+    }
 }

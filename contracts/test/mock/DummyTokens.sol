@@ -8,6 +8,10 @@ contract MockCCIPBnMToken is ERC20 {
     constructor() ERC20("Mock CCIP-BnM", "mCCIP-BnM") {
         _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, 1000e18); // Anvil 0
     }
+
+    function decimals() public view override returns (uint8) {
+        return 6;
+    }
 }
 
 contract MockTestToken is ERC20 {

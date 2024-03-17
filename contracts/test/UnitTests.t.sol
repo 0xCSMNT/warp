@@ -27,7 +27,7 @@ contract UnitTests is StdCheats, Test {
 
     ////////// CONSTANTS //////////
     uint256 public constant TOKEN_MINT_BALANCE = 1000e18;
-    uint256 public constant TOKEN_TRANSFER_AMOUNT = 10e18;
+    uint256 public constant TOKEN_TRANSFER_AMOUNT = 10e6;
     address public constant DEV_ACCOUNT_0 =
         0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address public constant DEV_ACCOUNT_1 =
