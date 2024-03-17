@@ -127,12 +127,12 @@ export function WithdrawProvider(props: { children: any }) {
       if (amnt <= 0) return
       try {
         setIsSubmitting(true)
-        const amount = parseUnits(inputAmount, 6)
-        console.log(amount)
+        const shares = parseUnits(inputAmount, 6)
+        console.log(shares)
         const encodedData = encodeFunctionData({
           abi: SOURCE_VAULT_ABI,
-          functionName: "deposit",
-          args: [amount, address],
+          functionName: "redeem",
+          args: [shares, address, address],
         })
         const gasLimit = await publicClient.estimateGas({
           account: address,
@@ -144,8 +144,8 @@ export function WithdrawProvider(props: { children: any }) {
         const hash = await walletClient.writeContract({
           address: sourceVaultContract,
           abi: SOURCE_VAULT_ABI,
-          functionName: "deposit",
-          args: [amount, address],
+          functionName: "redeem",
+          args: [shares, address, address],
           gas: gasLimit,
         })
         await publicClient.waitForTransactionReceipt({
@@ -154,7 +154,7 @@ export function WithdrawProvider(props: { children: any }) {
         })
         setIsSubmitting(false)
       } catch (error) {
-        console.warn("Error submitting:", error)
+        console.warn("Error submitting withdraw:", error)
         setIsSubmitting(false)
       }
     }
