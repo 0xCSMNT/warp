@@ -7,6 +7,10 @@ participant SourceVault
 participant SenderReceiver
 endbox
 
+== deposit flow  ==
+Bob -> SourceVault: deposit(amount)
+SourceVault -> Bob: vault token (shares)
+
 == deposit flow (from keeper bot)  ==
 note left SourceVault
 if depositableAssetToDestination() >= depositThreshold
