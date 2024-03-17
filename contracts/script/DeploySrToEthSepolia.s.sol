@@ -18,7 +18,7 @@ contract DeployContractsToArbSepolia is Script {
     uint64 ETH_SEPOLIA_CHAIN_ID = 16015286601757825753;
 
     // Change this to the address of the SourceVault
-    address SOURCE_VAULT = 0x04576A9929C20cE6818748b13B21014fFCA9610d; // WRONG ADDRESS!
+    // address SOURCE_VAULT = 0x04576A9929C20cE6818748b13B21014fFCA9610d; // WRONG ADDRESS!
     address DESTINATION_VAULT = 0x87a0a0fA863EF3705cDC0c62b95EbCBE5c58B20C; // FAKE VAULT
 
     function run() external {
@@ -27,13 +27,13 @@ contract DeployContractsToArbSepolia is Script {
         senderReceiver = new SenderReceiver(ROUTER, LINK);
 
         senderReceiver.allowlistSourceChain(ARB_SEPOLIA_CHAIN_ID, true);
-        senderReceiver.allowlistSender(SOURCE_VAULT, true);
+        // senderReceiver.allowlistSender(SOURCE_VAULT, true);
         senderReceiver.allowlistDestinationChain(ARB_SEPOLIA_CHAIN_ID, true);
         senderReceiver.addDestinationVault(address(DESTINATION_VAULT)); // SOMMELIER
         senderReceiver.addVaultToken(USDC);
         senderReceiver.updateVaultTokenDecimals(6);
         senderReceiver.addSourceChainId(ARB_SEPOLIA_CHAIN_ID);
-        senderReceiver.addSourceVault(SOURCE_VAULT);
+        // senderReceiver.addSourceVault(SOURCE_VAULT);
 
         vm.stopBroadcast();
     }

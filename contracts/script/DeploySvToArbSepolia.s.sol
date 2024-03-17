@@ -29,8 +29,12 @@ contract DeploySvToArb is Script {
         sourceVault.allowlistDestinationChain(ETH_SEPOLIA_CHAIN_ID, true);
         sourceVault.addDestinationChainId(ETH_SEPOLIA_CHAIN_ID);
         sourceVault.allowlistSourceChain(ETH_SEPOLIA_CHAIN_ID, true);
+        sourceVault.allowlistSender(
+            0x5Ea34d2aE385b25F18AC1401c10aFd20Ba32C0F7,
+            true
+        );
         sourceVault.addDestinationSenderReceiver(
-            0x04576A9929C20cE6818748b13B21014fFCA9610d
+            0x5Ea34d2aE385b25F18AC1401c10aFd20Ba32C0F7
         );
     }
 }
