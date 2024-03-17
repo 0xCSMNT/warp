@@ -459,4 +459,8 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
     function getLinkTokenAddress() public view returns (address) {
         return address(s_linkToken);
     }
+
+    function _onlySelf() internal view {
+        require(msg.sender == address(this), "SenderReceiver: only self");
+    }
 }

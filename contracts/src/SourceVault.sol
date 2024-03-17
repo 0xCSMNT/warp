@@ -223,9 +223,8 @@ contract SourceVault is
         );
     }
 
-    function receiveQuitSignal(
-        uint256 _assetFromDestinationVault
-    ) public onlyAllowlisted(destinationChainId, destinationSenderReceiver) {
+    function receiveQuitSignal(uint256 _assetFromDestinationVault) public {
+        _onlySelf();
         cacheAssetFromDst = _assetFromDestinationVault;
         lastRedeemFromDst = block.timestamp;
         pendingToRedeemFromDst = 0;
