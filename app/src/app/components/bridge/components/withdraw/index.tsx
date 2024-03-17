@@ -1,4 +1,4 @@
-import { useBridge } from "@/app/providers/bridge-provider"
+import { useWithdraw } from "@/app/providers/withdraw-provider"
 
 import { Input } from "./input"
 import { Quote } from "./quote"
@@ -15,7 +15,7 @@ export function Withdraw() {
     onApprove,
     onChangeInput,
     onSubmit,
-  } = useBridge()
+  } = useWithdraw()
   return (
     <>
       <div>

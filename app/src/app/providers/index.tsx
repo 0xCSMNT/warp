@@ -10,6 +10,7 @@ import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 import { chains } from "@/app/config"
 
 import { BridgeProvider } from "./bridge-provider"
+import { WithdrawProvider } from "@/app/providers/withdraw-provider"
 
 const config = createConfig(
   getDefaultConfig({
@@ -51,7 +52,9 @@ export const Providers = ({ children }: ProvidersProps) => {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider>
-          <BridgeProvider>{children}</BridgeProvider>
+          <BridgeProvider>
+            <WithdrawProvider>{children}</WithdrawProvider>
+          </BridgeProvider>
         </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
