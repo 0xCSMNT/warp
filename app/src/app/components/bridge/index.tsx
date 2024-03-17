@@ -5,16 +5,18 @@ import { Deposit } from "@/app/components/bridge/components/deposit"
 import { Submitting } from "@/app/components/bridge/components/submitting"
 import { Withdraw } from "@/app/components/bridge/components/withdraw"
 import { useBridge } from "@/app/providers/bridge-provider"
+import { useWithdraw } from "@/app/providers/withdraw-provider"
 
 export function Bridge() {
   const [showDeposit, setShowDeposit] = useState(true)
   const { isSubmitting } = useBridge()
+  const { isSubmitting: isSubmittingWithdraw } = useWithdraw()
 
   const toggleDepositWithdraw = (showDeposit: boolean) => {
     setShowDeposit(showDeposit)
   }
 
-  return isSubmitting ? (
+  return isSubmitting || isSubmittingWithdraw ? (
     <Submitting />
   ) : (
     <div className="flex flex-col w-[500px] gap-1">
