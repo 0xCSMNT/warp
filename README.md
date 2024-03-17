@@ -4,7 +4,9 @@ ETHGlobal London Hackathon Project
 
 ## Screenshot
 
-![screenshot](./images/screenshot.png)
+<img width="1512" alt="02" src="https://github.com/0xCSMNT/warp/assets/2104965/8d7cfbc7-2191-4477-9852-ec7c772a0652">
+<img width="1512" alt="03" src="https://github.com/0xCSMNT/warp/assets/2104965/24e51878-36f4-4b53-921b-544f7a88ac0e">
+
 
 ## Deposit / Withdrawal Flow
 
