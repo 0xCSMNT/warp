@@ -24,11 +24,15 @@ Deployed to [Arbitrum Sepolia](https://sepolia.arbiscan.io/address/0x59d4f2d5361
 
 ### Terms and Contract Names:
 **Source Chain:** This is the chain where the user facing contracts are deployed. 
+
 **Destination Chain:** This is the chain where funds will be bridged
+
 **SourceVault:** This is the main user facing smart contract. Exposes an ERC4626 interface. Stores the accounting for the vault users. 
 Lives on Source Chain
+
 **DestinationVault:** This is the actual live vault we are connecting too. It can be any ERC4626-compliant smart contract. In the project, a mock contract with the same name is used for testing purposes.
 Lives on Destination Chain
+
 **SenderReceiver:** This “middle-man” contract that receives CCIP messages and transfers on the Destination Chain. It deposits to the DestinationVault and receives shares to represent the aggregate position of all SourceVault shareholders.
 
 
