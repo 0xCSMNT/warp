@@ -180,8 +180,8 @@ export function BridgeProvider(props: { children: any }) {
       setIsLoading(true)
       const encodedData = encodeFunctionData({
         abi: SOURCE_VAULT_ABI,
-        functionName: "deposit",
-        args: [amount, address],
+        functionName: "previewDeposit",
+        args: [amount],
       })
       console.log(encodedData)
       const { data } = await publicClient.call({
@@ -192,7 +192,7 @@ export function BridgeProvider(props: { children: any }) {
       if (data !== undefined) {
         const value = decodeFunctionResult({
           abi: SOURCE_VAULT_ABI,
-          functionName: "deposit",
+          functionName: "previewDeposit",
           data,
         })
         const outputAmount = formatUnits(BigInt(value), 6)
