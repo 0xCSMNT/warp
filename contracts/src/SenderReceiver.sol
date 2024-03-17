@@ -60,8 +60,7 @@ contract SenderReceiver is ProgrammableTokenTransfers {
     ) public onlyAllowlisted(sourceChainId, sourceVault) {
         uint256 totalAssets = assetsFromSrc +
             IERC4626(destinationVault).balanceOf(address(this));
-        uint256 assets = _convertToAssets(shareRatio, totalAssets)
-            .formatDecimals(18, vaultTokenDecimals);
+        uint256 assets = _convertToAssets(shareRatio, totalAssets);
 
         IERC4626(destinationVault).withdraw(
             assets,
@@ -84,7 +83,7 @@ contract SenderReceiver is ProgrammableTokenTransfers {
     function _convertToAssets(
         uint256 shareRatio,
         uint256 totalAssets
-    ) internal pure returns (uint256) {
-        return shareRatio.mulWadDown(totalAssets);
+    ) internal view returns (uint256) {
+        return shareRatio.mulDivDown(totalAssets, 10 ** vaultTokenDecimals);
     }
 }

@@ -421,7 +421,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
     /// @param _beneficiary The address to which the Ether should be sent.
-    function withdraw(address _beneficiary) public onlyOwner {
+    function withdrawEth(address _beneficiary) public onlyOwner {
         // Retrieve the balance of this contract
         uint256 amount = address(this).balance;
 
