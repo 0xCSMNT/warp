@@ -1,6 +1,11 @@
 # warp
 
-ETHGlobal London Hackathon Project
+[ETHGlobal London Hackathon Project](https://ethglobal.com/showcase/warp-z5gzd)
+
+Winner of
+
+- Chainlink - Chainlink CCIP ($2k)
+- Arbitrum - Qualifying Arbitrum Submissions ($44.12)
 
 ## Screenshot
 
@@ -10,12 +15,15 @@ ETHGlobal London Hackathon Project
 ## Deployed Contracts
 
 ### Source Vault
+
 Deployed to [Base Sepolia](https://sepolia.basescan.org/address/0x6fd4f4e2bd64168254f3c719b28b88d5d0246d40#code). This is the user facing ERC4626 contract that handles deposits and initiates cross chain transactions to deposit and withdraw from the destination vault.
 
 ### SenderReceiver
+
 Deployed to [Arbitrum Sepolia](https://sepolia.arbiscan.io/address/0x59d4f2d53612e944c583c838358f4310c5136799#code). This is contract on the destination chain that receives CCIP messages, interacts with the destination ERC4626, and handles all of the accounting for user deposits.
 
 ### Example Transactions
+
 [execute()](https://ccip.chain.link/msg/0x78f0808e4260a101b4443e9944f30747b0e53e3ef06e90f459edfebe0e791946) - sends the token and data from the SourceVault to the SenderReceiver on destination chain via CCIP.
 
 [quit() requested](https://ccip.chain.link/msg/0x7470ca05a7e34ff1c66ad7033673f1a97fbbeb73802e0898e9e747489959f4c8) - sends a request from SourceVault to SenderReceiver to request withdrawal from the destination vault.
@@ -23,18 +31,18 @@ Deployed to [Arbitrum Sepolia](https://sepolia.arbiscan.io/address/0x59d4f2d5361
 [quit() executed](https://ccip.chain.link/msg/0x6b432a15e447ea6a44dbff014c72bc6b6b78d0283c09054f241bf62caad9df9f) - Sender Receiver withdraws from the destination vault and send the tokens back to SourceVault for customer withdrawal.
 
 ### Terms and Contract Names:
-**Source Chain:** This is the chain where the user facing contracts are deployed. 
+
+**Source Chain:** This is the chain where the user facing contracts are deployed.
 
 **Destination Chain:** This is the chain where funds will be bridged
 
-**SourceVault:** This is the main user facing smart contract. Exposes an ERC4626 interface. Stores the accounting for the vault users. 
+**SourceVault:** This is the main user facing smart contract. Exposes an ERC4626 interface. Stores the accounting for the vault users.
 Lives on Source Chain
 
 **DestinationVault:** This is the actual live vault we are connecting too. It can be any ERC4626-compliant smart contract. In the project, a mock contract with the same name is used for testing purposes.
 Lives on Destination Chain
 
 **SenderReceiver:** This “middle-man” contract that receives CCIP messages and transfers on the Destination Chain. It deposits to the DestinationVault and receives shares to represent the aggregate position of all SourceVault shareholders.
-
 
 ## Deposit / Withdrawal Flow
 
